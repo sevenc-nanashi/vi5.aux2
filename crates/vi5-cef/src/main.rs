@@ -61,8 +61,8 @@ fn main() -> anyhow::Result<()> {
     cmd.append_switch(Some(&CefString::from("disable-renderer-backgrounding")));
 
     let options = RenderOptions {
-        width: 2048,
-        height: 2048,
+        width: 1024,
+        height: 1024,
         timeout: Duration::from_secs(10),
     };
 
@@ -237,7 +237,6 @@ fn main() -> anyhow::Result<()> {
     loop {
         do_message_loop_work();
         if let Ok(frame) = rx.try_recv() {
-            println!("Rendered frame: {}x{}", frame.width, frame.height);
             last_frame = Some(frame);
             num_rendered += 1;
             if num_rendered >= 100 {
