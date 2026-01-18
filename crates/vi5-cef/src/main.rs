@@ -1,8 +1,4 @@
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
-    mpsc,
-};
+use std::sync::{Arc, atomic::AtomicBool, mpsc};
 use std::time::{Duration, Instant};
 
 use cef::{
@@ -69,13 +65,24 @@ struct GpuCapture {
 
 impl GpuCapture {
     fn new() -> anyhow::Result<Self> {
-        let instance = wgpu::Instance::default();
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::DX12,
+            ..Default::default()
+        });
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
             compatible_surface: None,
             force_fallback_adapter: false,
         }))
-        .map_err(|_| anyhow::anyhow!("wgpu adapter not found"))?;
+        .map_err(|err| anyhow::anyhow!("wgpu adapter not found: {err:?}"))?;
+        let adapter_info = adapter.get_info();
+        if adapter_info.backend != wgpu::Backend::Dx12 {
+            anyhow::bail!(
+                "wgpu backend {:?} is not supported for CEF shared textures",
+                adapter_info.backend
+            );
+        }
+        println!("Using wgpu backend: {:?}", adapter_info.backend);
         let device_desc = wgpu::DeviceDescriptor {
             label: Some("cef-osr-device"),
             required_features: wgpu::Features::empty(),
@@ -86,7 +93,8 @@ impl GpuCapture {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("cef-osr-blit-shader"),
             source: wgpu::ShaderSource::Wgsl(
-                r#"
+                std::borrow::Cow::Borrowed(
+                    r#"
 struct VsOut {
     @builtin(position) pos: vec4<f32>,
     @location(0) uv: vec2<f32>,
@@ -100,9 +108,9 @@ fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
         vec2<f32>(-1.0, 3.0),
     );
     var uvs = array<vec2<f32>, 3>(
-        vec2<f32>(0.0, 1.0),
-        vec2<f32>(2.0, 1.0),
-        vec2<f32>(0.0, -1.0),
+        vec2<f32>(0.0, 0.0),
+        vec2<f32>(2.0, 0.0),
+        vec2<f32>(0.0, 2.0),
     );
     var out: VsOut;
     out.pos = vec4<f32>(positions[vi], 0.0, 1.0);
@@ -115,10 +123,12 @@ fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
 
 @fragment
 fn fs(in: VsOut) -> @location(0) vec4<f32> {
-    return textureSample(src_tex, src_sampler, in.uv);
+    let uv = vec2<f32>(in.uv.x, 1.0 - in.uv.y);
+    let color = textureSample(src_tex, src_sampler, uv);
+    return vec4<f32>(color.rgb, 1.0);
 }
-"#
-                .into(),
+"#,
+                ),
             ),
         });
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -177,8 +187,12 @@ fn fs(in: VsOut) -> @location(0) vec4<f32> {
         });
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("cef-osr-sampler"),
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
             ..Default::default()
         });
         Ok(Self {
@@ -375,8 +389,8 @@ fn main() -> anyhow::Result<()> {
     cmd.append_switch(Some(&CefString::from("disable-renderer-backgrounding")));
 
     let options = RenderOptions {
-        width: 1024,
-        height: 1024,
+        width: 2048,
+        height: 2048,
         timeout: Duration::from_secs(10),
     };
 
@@ -431,7 +445,6 @@ fn main() -> anyhow::Result<()> {
     let _shutdown_guard = ShutdownGuard;
 
     let (tx, rx) = mpsc::channel();
-    let loaded = Arc::new(AtomicBool::new(false));
     let sent = Arc::new(AtomicBool::new(false));
     let gpu = Arc::new(GpuCapture::new()?);
 
