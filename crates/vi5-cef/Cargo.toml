@@ -5,8 +5,10 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
-cef = "143.7.1"
+cef = { version = "143.7.1", features = ["accelerated_osr"] }
 image = "0.25.9"
+pollster = "0.4.0"
+wgpu = "28"
 
 [dev-dependencies]
 env_logger = "0.11.8"
