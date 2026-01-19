@@ -70,12 +70,12 @@ wrap_render_handler! {
             }
             let size = width as usize * height as usize * 4;
             let src = unsafe { std::slice::from_raw_parts(buffer, size) };
-            let mut rgba = Vec::with_capacity(size);
-            for pixel in src.chunks_exact(4) {
-                rgba.push(pixel[2]);
-                rgba.push(pixel[1]);
-                rgba.push(pixel[0]);
-                rgba.push(pixel[3]);
+            let mut rgba = vec![0; size];
+            for (dst, src) in rgba.chunks_exact_mut(4).zip(src.chunks_exact(4)) {
+                dst[0] = src[2];
+                dst[1] = src[1];
+                dst[2] = src[0];
+                dst[3] = src[3];
             }
             let _ = self.sender.send(RenderMessage::Software(RenderedFrame {
                 width: width as usize,

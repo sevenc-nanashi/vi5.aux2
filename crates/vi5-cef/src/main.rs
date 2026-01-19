@@ -7,13 +7,13 @@ mod types;
 use std::sync::{Arc, atomic::AtomicBool, mpsc};
 
 use log::info;
+use render_loop::RenderLoop;
 
 use crate::cef_app::{
     build_render_options, build_settings, create_browser, initialize_cef, prepare_process,
 };
 use crate::gpu_capture::GpuCapture;
 use crate::handlers::create_client;
-use crate::render_loop::run_render_loop;
 
 fn main() -> anyhow::Result<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
@@ -39,7 +39,15 @@ fn main() -> anyhow::Result<()> {
     info!("create browser for {url}");
     let mut client = create_client(&options, sent, loaded.clone(), gpu, tx);
     let browser = create_browser(&mut client, url)?;
-    run_render_loop(&browser, &rx, &loaded);
+    let render_loop = RenderLoop::new(browser, rx, loaded);
+    for _ in 0..10 {
+        let frame = render_loop.render()?;
+        info!(
+            "received frame: {}x{}, {} bytes",
+            frame.width,
+            frame.height,
+            frame.rgba.len()
+        );
+    }
     Ok(())
 }
-

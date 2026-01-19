@@ -31,7 +31,4 @@ window.drawFrame = (nonce: number) => {
     ctx.fillStyle = `rgba(${chunk[0] || 0}, ${chunk[1] || 0}, ${chunk[2] || 0}, 1)`;
     ctx.fillRect(x, y, 1, 1);
   }
-
-  ctx.fillStyle = "black";
-  ctx.fillRect(canvas.width - 50, canvas.height - 50, 50, 50);
 };
