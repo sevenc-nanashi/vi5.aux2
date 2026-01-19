@@ -1,0 +1,11 @@
+#canvas {
+  position: fixed;
+  inset: 0;
+}
+canvas:not(#canvas) {
+  display: none;
+}
+
+body, html {
+  background: transparent;
+}

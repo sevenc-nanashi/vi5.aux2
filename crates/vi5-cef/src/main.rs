@@ -92,44 +92,9 @@ impl GpuCapture {
         let (device, queue) = pollster::block_on(adapter.request_device(&device_desc))?;
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("cef-osr-blit-shader"),
-            source: wgpu::ShaderSource::Wgsl(
-                std::borrow::Cow::Borrowed(
-                    r#"
-struct VsOut {
-    @builtin(position) pos: vec4<f32>,
-    @location(0) uv: vec2<f32>,
-};
-
-@vertex
-fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
-    var positions = array<vec2<f32>, 3>(
-        vec2<f32>(-1.0, -1.0),
-        vec2<f32>(3.0, -1.0),
-        vec2<f32>(-1.0, 3.0),
-    );
-    var uvs = array<vec2<f32>, 3>(
-        vec2<f32>(0.0, 0.0),
-        vec2<f32>(2.0, 0.0),
-        vec2<f32>(0.0, 2.0),
-    );
-    var out: VsOut;
-    out.pos = vec4<f32>(positions[vi], 0.0, 1.0);
-    out.uv = uvs[vi];
-    return out;
-}
-
-@group(0) @binding(0) var src_tex: texture_2d<f32>;
-@group(0) @binding(1) var src_sampler: sampler;
-
-@fragment
-fn fs(in: VsOut) -> @location(0) vec4<f32> {
-    let uv = vec2<f32>(in.uv.x, 1.0 - in.uv.y);
-    let color = textureSample(src_tex, src_sampler, uv);
-    return vec4<f32>(color.rgb, 1.0);
-}
-"#,
-                ),
-            ),
+            source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
+                "./shader.wgsl"
+            ))),
         });
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("cef-osr-bind-group-layout"),
@@ -340,7 +305,7 @@ fn fs(in: VsOut) -> @location(0) vec4<f32> {
         self.device.poll(wgpu::PollType::Wait {
             submission_index: None,
             timeout: None,
-        });
+        })?;
         match rx.recv() {
             Ok(Ok(())) => {}
             Ok(Err(err)) => anyhow::bail!("readback map failed: {err:?}"),
@@ -389,8 +354,8 @@ fn main() -> anyhow::Result<()> {
     cmd.append_switch(Some(&CefString::from("disable-renderer-backgrounding")));
 
     let options = RenderOptions {
-        width: 2048,
-        height: 2048,
+        width: 1024,
+        height: 1024,
         timeout: Duration::from_secs(10),
     };
 
@@ -491,6 +456,7 @@ fn main() -> anyhow::Result<()> {
                 width: ::std::os::raw::c_int,
                 height: ::std::os::raw::c_int,
             ) {
+                println!("on_paint called: type={:?}, size={}x{}", type_, width, height);
                 if type_ != PaintElementType::VIEW {
                     return;
                 }
@@ -513,29 +479,29 @@ fn main() -> anyhow::Result<()> {
                 }));
             }
 
-            fn on_accelerated_paint(
-                &self,
-                _browser: Option<&mut Browser>,
-                type_: PaintElementType,
-                _dirty_rects: Option<&[Rect]>,
-                info: Option<&AcceleratedPaintInfo>,
-            ) {
-                if type_ != PaintElementType::VIEW {
-                    return;
-                }
-                if info.is_none() {
-                    return;
-                }
-                let info = info.unwrap();
-                match self.gpu.capture(info) {
-                    Ok(frame) => {
-                        let _ = self.sender.send(RenderMessage::Accelerated(frame));
-                    }
-                    Err(err) => {
-                        eprintln!("Failed to read accelerated frame: {err}");
-                    }
-                }
-            }
+            // fn on_accelerated_paint(
+            //     &self,
+            //     _browser: Option<&mut Browser>,
+            //     type_: PaintElementType,
+            //     _dirty_rects: Option<&[Rect]>,
+            //     info: Option<&AcceleratedPaintInfo>,
+            // ) {
+            //     if type_ != PaintElementType::VIEW {
+            //         return;
+            //     }
+            //     if info.is_none() {
+            //         return;
+            //     }
+            //     let info = info.unwrap();
+            //     match self.gpu.capture(info) {
+            //         Ok(frame) => {
+            //             let _ = self.sender.send(RenderMessage::Accelerated(frame));
+            //         }
+            //         Err(err) => {
+            //             eprintln!("Failed to read accelerated frame: {err}");
+            //         }
+            //     }
+            // }
         }
     }
 
@@ -563,12 +529,17 @@ fn main() -> anyhow::Result<()> {
 
     let parent: WindowHandle = HWND::default();
     let mut window_info = WindowInfo::default().set_as_windowless(parent);
-    window_info.shared_texture_enabled = 1;
-    let mut browser_settings = BrowserSettings::default();
-    browser_settings.windowless_frame_rate = 60;
-    browser_settings.background_color = 0xFFFFFFFF;
+    window_info.shared_texture_enabled = 0;
+    // let mut browser_settings = BrowserSettings::default();
+    // browser_settings.windowless_frame_rate = 60;
+    // browser_settings.background_color = 0xFFFFFFFF;
+    let browser_settings = BrowserSettings {
+        windowless_frame_rate: 60,
+        background_color: 0x00000000,
+        ..Default::default()
+    };
 
-    let url = "https://editor.p5js.org/sevenc-nanashi/sketches/S_0TUFOd5";
+    let url = "http://localhost:5173/";
     let browser = browser_host_create_browser_sync(
         Some(&window_info),
         Some(&mut client),
@@ -596,6 +567,10 @@ fn main() -> anyhow::Result<()> {
     let mut accelerated_frames = 0;
     let mut last_frame: Option<RenderedFrame> = None;
     loop {
+        browser
+            .host()
+            .unwrap()
+            .invalidate(cef::PaintElementType::VIEW);
         do_message_loop_work();
         if let Ok(message) = rx.try_recv() {
             match message {
@@ -621,11 +596,6 @@ fn main() -> anyhow::Result<()> {
                 break;
             }
         }
-
-        browser
-            .host()
-            .unwrap()
-            .invalidate(cef::PaintElementType::VIEW);
     }
 
     let after = Instant::now();

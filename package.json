@@ -1,5 +1,5 @@
 {
-  "name": "vi5.aux2",
+  "name": "vi5",
   "module": "src/index.ts",
   "type": "module",
   "devDependencies": {
@@ -7,5 +7,9 @@
   },
   "peerDependencies": {
     "typescript": "^5"
-  }
+  },
+  "workspaces": [
+    ".",
+    "./examples/*"
+  ]
 }
