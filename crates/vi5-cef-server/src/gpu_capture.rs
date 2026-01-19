@@ -289,4 +289,3 @@ impl GpuCapture {
 fn align_to(value: u32, alignment: u32) -> u32 {
     value.div_ceil(alignment) * alignment
 }
-

@@ -27,7 +27,6 @@ export function runServer(root: string, port: number) {
       return restartPromise;
     }
     await server.listen(undefined, isRestart);
-    server.printUrls();
   };
   createDevServer(false).catch((err) => {
     console.error(err);

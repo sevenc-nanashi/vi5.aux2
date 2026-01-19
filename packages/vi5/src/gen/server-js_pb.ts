@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file server-js.proto.
  */
 export const file_server_js: GenFile = /*@__PURE__*/
-  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzIioKDkluaXRpYWxpemVJbmZvEhgKEHJlbmRlcmVyX3ZlcnNpb24YASABKAkiUAoKQ2FudmFzSW5mbxINCgVub25jZRgBIAEoBRIJCgF4GAIgASgFEgkKAXkYAyABKAUSDQoFd2lkdGgYBCABKAUSDgoGaGVpZ2h0GAUgASgFIoUBCh1NYXliZUluY29tcGxldGVSZW5kZXJSZXNwb25zZRIrCgtjYW52YXNfaW5mbxgBIAEoCzIULnNlcnZlcmpzLkNhbnZhc0luZm9IABIXCg1lcnJvcl9tZXNzYWdlGAIgASgJSAASEgoKaW5jb21wbGV0ZRgDIAEoCEIKCghyZXNwb25zZWIGcHJvdG8z", [file_common]);
+  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzIioKDkluaXRpYWxpemVJbmZvEhgKEHJlbmRlcmVyX3ZlcnNpb24YASABKAkiWgoUUmVuZGVyZXJlZE9iamVjdEluZm8SDQoFbm9uY2UYASABKAUSCQoBeBgCIAEoBRIJCgF5GAMgASgFEg0KBXdpZHRoGAQgASgFEg4KBmhlaWdodBgFIAEoBSJ9ChRTaW5nbGVSZW5kZXJSZXNwb25zZRJAChZyZW5kZXJlcmVkX29iamVjdF9pbmZvGAEgASgLMh4uc2VydmVyanMuUmVuZGVyZXJlZE9iamVjdEluZm9IABIXCg1lcnJvcl9tZXNzYWdlGAIgASgJSABCCgoIcmVzcG9uc2UicAodTWF5YmVJbmNvbXBsZXRlUmVuZGVyUmVzcG9uc2USOAoQcmVuZGVyX3Jlc3BvbnNlcxgBIAMoCzIeLnNlcnZlcmpzLlNpbmdsZVJlbmRlclJlc3BvbnNlEhUKDWlzX2luY29tcGxldGUYAiABKAhiBnByb3RvMw", [file_common]);
 
 /**
  * @generated from message serverjs.InitializeInfo
@@ -33,9 +33,9 @@ export const InitializeInfoSchema: GenMessage<InitializeInfo> = /*@__PURE__*/
   messageDesc(file_server_js, 0);
 
 /**
- * @generated from message serverjs.CanvasInfo
+ * @generated from message serverjs.RendereredObjectInfo
  */
-export type CanvasInfo = Message<"serverjs.CanvasInfo"> & {
+export type RendereredObjectInfo = Message<"serverjs.RendereredObjectInfo"> & {
   /**
    * @generated from field: int32 nonce = 1;
    */
@@ -63,25 +63,25 @@ export type CanvasInfo = Message<"serverjs.CanvasInfo"> & {
 };
 
 /**
- * Describes the message serverjs.CanvasInfo.
- * Use `create(CanvasInfoSchema)` to create a new message.
+ * Describes the message serverjs.RendereredObjectInfo.
+ * Use `create(RendereredObjectInfoSchema)` to create a new message.
  */
-export const CanvasInfoSchema: GenMessage<CanvasInfo> = /*@__PURE__*/
+export const RendereredObjectInfoSchema: GenMessage<RendereredObjectInfo> = /*@__PURE__*/
   messageDesc(file_server_js, 1);
 
 /**
- * @generated from message serverjs.MaybeIncompleteRenderResponse
+ * @generated from message serverjs.SingleRenderResponse
  */
-export type MaybeIncompleteRenderResponse = Message<"serverjs.MaybeIncompleteRenderResponse"> & {
+export type SingleRenderResponse = Message<"serverjs.SingleRenderResponse"> & {
   /**
-   * @generated from oneof serverjs.MaybeIncompleteRenderResponse.response
+   * @generated from oneof serverjs.SingleRenderResponse.response
    */
   response: {
     /**
-     * @generated from field: serverjs.CanvasInfo canvas_info = 1;
+     * @generated from field: serverjs.RendereredObjectInfo renderered_object_info = 1;
      */
-    value: CanvasInfo;
-    case: "canvasInfo";
+    value: RendereredObjectInfo;
+    case: "rendereredObjectInfo";
   } | {
     /**
      * @generated from field: string error_message = 2;
@@ -89,11 +89,28 @@ export type MaybeIncompleteRenderResponse = Message<"serverjs.MaybeIncompleteRen
     value: string;
     case: "errorMessage";
   } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message serverjs.SingleRenderResponse.
+ * Use `create(SingleRenderResponseSchema)` to create a new message.
+ */
+export const SingleRenderResponseSchema: GenMessage<SingleRenderResponse> = /*@__PURE__*/
+  messageDesc(file_server_js, 2);
+
+/**
+ * @generated from message serverjs.MaybeIncompleteRenderResponse
+ */
+export type MaybeIncompleteRenderResponse = Message<"serverjs.MaybeIncompleteRenderResponse"> & {
+  /**
+   * @generated from field: repeated serverjs.SingleRenderResponse render_responses = 1;
+   */
+  renderResponses: SingleRenderResponse[];
 
   /**
-   * @generated from field: bool incomplete = 3;
+   * @generated from field: bool is_incomplete = 2;
    */
-  incomplete: boolean;
+  isIncomplete: boolean;
 };
 
 /**
@@ -101,5 +118,5 @@ export type MaybeIncompleteRenderResponse = Message<"serverjs.MaybeIncompleteRen
  * Use `create(MaybeIncompleteRenderResponseSchema)` to create a new message.
  */
 export const MaybeIncompleteRenderResponseSchema: GenMessage<MaybeIncompleteRenderResponse> = /*@__PURE__*/
-  messageDesc(file_server_js, 2);
+  messageDesc(file_server_js, 3);
 

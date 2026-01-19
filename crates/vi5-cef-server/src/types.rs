@@ -20,4 +20,3 @@ impl std::fmt::Display for RenderError {
 }
 
 impl std::error::Error for RenderError {}
-

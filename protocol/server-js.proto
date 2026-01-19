@@ -7,19 +7,21 @@ import "common.proto";
 
 message InitializeInfo { string renderer_version = 1; }
 
-message CanvasInfo {
+message RendereredObjectInfo {
   int32 nonce = 1;
   int32 x = 2;
   int32 y = 3;
   int32 width = 4;
   int32 height = 5;
 }
-
-message MaybeIncompleteRenderResponse {
+message SingleRenderResponse {
   oneof response {
-    CanvasInfo canvas_info = 1;
+    RendereredObjectInfo renderered_object_info = 1;
     string error_message = 2;
   }
-  bool incomplete = 3;
 }
 
+message MaybeIncompleteRenderResponse {
+  repeated SingleRenderResponse render_responses = 1;
+  bool is_incomplete = 2;
+}

@@ -5,8 +5,8 @@ use base64::Engine;
 use cef::{ImplBrowser, ImplBrowserHost, ImplFrame};
 use prost::Message;
 
-type PaintCallback = dyn Fn(&[u8], usize, usize) + Send + Sync;
-static PAINT_CALLBACKS: std::sync::LazyLock<dashmap::DashMap<u32, Arc<PaintCallback>>> =
+type PaintCallback = dyn FnMut(&[u8], usize, usize) -> std::ops::ControlFlow<()> + Send + Sync;
+static PAINT_CALLBACKS: std::sync::LazyLock<dashmap::DashMap<u32, Box<PaintCallback>>> =
     std::sync::LazyLock::new(dashmap::DashMap::new);
 
 pub fn on_paint(buffer: &[u8], width: usize, height: usize) {
@@ -15,8 +15,14 @@ pub fn on_paint(buffer: &[u8], width: usize, height: usize) {
         return;
     }
     let nonce = u32::from_le_bytes([buffer[0], buffer[1], buffer[2], buffer[4]]);
-    if let Some((_, callback)) = PAINT_CALLBACKS.remove(&nonce) {
-        callback(buffer, width, height);
+    if let Some(mut callback) = PAINT_CALLBACKS.get_mut(&nonce) {
+        match callback(buffer, width, height) {
+            std::ops::ControlFlow::Break(()) => {
+                drop(callback);
+                PAINT_CALLBACKS.remove(&nonce);
+            }
+            std::ops::ControlFlow::Continue(()) => {}
+        }
     } else {
         tracing::warn!("No paint callback found for nonce {}", nonce);
     }
@@ -32,8 +38,8 @@ pub fn on_accelerated_paint(
         return;
     }
     let buffer = buffer.as_ref();
-    let nonce = u32::from_le_bytes([buffer[2], buffer[1], buffer[0], buffer[6]]);
-    if let Some((_, callback)) = PAINT_CALLBACKS.remove(&nonce) {
+    let nonce = u32::from_le_bytes([buffer[0], buffer[1], buffer[2], buffer[4]]);
+    if let Some(mut callback) = PAINT_CALLBACKS.get_mut(&nonce) {
         let mut slice = vec![0u8; width * height * 4];
         for y in 0..height {
             let src_start = y * bytes_per_row;
@@ -41,7 +47,13 @@ pub fn on_accelerated_paint(
             slice[dst_start..dst_start + width * 4]
                 .copy_from_slice(&buffer[src_start..src_start + width * 4]);
         }
-        callback(&slice, width, height);
+        match callback(&slice, width, height) {
+            std::ops::ControlFlow::Break(()) => {
+                drop(callback);
+                PAINT_CALLBACKS.remove(&nonce);
+            }
+            std::ops::ControlFlow::Continue(()) => {}
+        }
     } else {
         tracing::warn!("No paint callback found for nonce {}", nonce);
     }
@@ -78,25 +90,27 @@ impl RenderLoop {
         PAINT_CALLBACKS.clear();
         PAINT_CALLBACKS.insert(
             0,
-            Arc::new({
+            Box::new({
                 let initialized = self.initialized.clone();
-                move |buffer, _, _| match read_message_from_image::<
-                    crate::protocol::serverjs::InitializeInfo,
-                >(buffer)
-                {
-                    Ok(info) => {
-                        tracing::info!("Page initialization complete");
-                        initialized.set(Ok(info)).unwrap();
+                move |buffer, _, _| {
+                    match read_message_from_image::<crate::protocol::serverjs::InitializeInfo>(
+                        buffer,
+                    ) {
+                        Ok(info) => {
+                            tracing::info!("Page initialization complete");
+                            initialized.set(Ok(info)).unwrap();
+                        }
+                        Err(e) => {
+                            tracing::error!("Failed to decode InitializationComplete: {}", e);
+                            initialized
+                                .set(Err(anyhow::anyhow!(
+                                    "Failed to decode InitializationComplete: {}",
+                                    e
+                                )))
+                                .unwrap();
+                        }
                     }
-                    Err(e) => {
-                        tracing::error!("Failed to decode InitializationComplete: {}", e);
-                        initialized
-                            .set(Err(anyhow::anyhow!(
-                                "Failed to decode InitializationComplete: {}",
-                                e
-                            )))
-                            .unwrap();
-                    }
+                    std::ops::ControlFlow::Break(())
                 }
             }),
         );
@@ -112,25 +126,18 @@ impl RenderLoop {
         }
     }
 
-    pub async fn batch_render<F>(
+    pub async fn batch_render(
         &self,
         request: crate::protocol::common::BatchRenderRequest,
-        on_response: F,
-    ) -> anyhow::Result<()>
-    where
-        F: Fn(
-                crate::protocol::serverjs::MaybeIncompleteRenderResponse,
-                &[u8],
-                usize,
-                usize,
-            ) -> anyhow::Result<()>
-            + std::marker::Sync
-            + std::marker::Send
-            + 'static,
-    {
+    ) -> anyhow::Result<crate::protocol::libserver::BatchRenderResponse> {
         self.wait_for_initialization().await;
         let nonce = rand::random::<u32>();
-        let callback = Arc::new(move |buffer: &[u8], width: usize, height: usize| {
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        let mut maybe_tx = Some(tx);
+        let callback = Box::new(move |buffer: &[u8], width: usize, height: usize| {
+            let Some(tx) = &maybe_tx else {
+                return std::ops::ControlFlow::Break(());
+            };
             let response = match read_message_from_image::<
                 crate::protocol::serverjs::MaybeIncompleteRenderResponse,
             >(buffer)
@@ -138,17 +145,61 @@ impl RenderLoop {
                 Ok(resp) => resp,
                 Err(e) => {
                     tracing::error!("Failed to decode BatchRenderResponse: {}", e);
-                    return;
+                    return std::ops::ControlFlow::Break(());
                 }
             };
-            match on_response(response, buffer, width, height) {
-                Ok(resp) => {
-                    tracing::info!("Batch render response processed successfully: {:?}", resp);
-                }
-                Err(e) => {
-                    tracing::error!("Failed to process BatchRenderResponse: {}", e);
+
+            for maybe_renderered_object_info in response.render_responses {
+                match maybe_renderered_object_info.response.unwrap() {
+                    crate::protocol::serverjs::single_render_response::Response::RendereredObjectInfo(
+                        renderered_object_info,
+                    ) => {
+                        let mut image_data =
+                            vec![0u8; renderered_object_info.width as usize * renderered_object_info.height as usize * 4];
+                        let start_x = renderered_object_info.x as usize;
+                        let end_x = start_x + renderered_object_info.width as usize;
+                        for row in 0..renderered_object_info.height as usize {
+                            let start_y = renderered_object_info.y as usize + row;
+                            let buffer_start = start_y * width * 4 + start_x * 4;
+                            let buffer_end = start_y * width * 4 + end_x * 4;
+                            let image_data_start = row * renderered_object_info.width as usize * 4;
+                            let image_data_end = (row + 1) * renderered_object_info.width as usize * 4;
+                            image_data[image_data_start..image_data_end]
+                                .copy_from_slice(&buffer[buffer_start..buffer_end]);
+
+                        }
+                        let _ = tx.send(crate::protocol::libserver::RenderResponse {
+                            response: Some(
+                                crate::protocol::libserver::render_response::Response::Success(
+                                    crate::protocol::libserver::SuccessRenderResponse {
+                                        render_nonce: renderered_object_info.nonce,
+                                        width: renderered_object_info.width,
+                                        height: renderered_object_info.height,
+                                        image_data,
+                                    },
+                                ),
+                            ),
+                        });
+                    }
+                    crate::protocol::serverjs::single_render_response::Response::ErrorMessage(
+                        err,
+                    ) => {
+                        let _ = tx.send(crate::protocol::libserver::RenderResponse {
+                            response: Some(
+                                crate::protocol::libserver::render_response::Response::ErrorMessage(
+                                    err,
+                                ),
+                            ),
+                        });
+                    }
                 }
             }
+
+            if !response.is_incomplete {
+                drop(maybe_tx.take());
+                return std::ops::ControlFlow::Break(());
+            }
+            std::ops::ControlFlow::Continue(())
         });
         PAINT_CALLBACKS.insert(nonce, callback);
         let request = base64::engine::general_purpose::STANDARD.encode(request.encode_to_vec());
@@ -167,12 +218,30 @@ impl RenderLoop {
         if let Some(host) = self.browser.host() {
             host.invalidate(cef::PaintElementType::VIEW);
         }
+        let mut render_responses = vec![];
         loop {
-            if let Some(host) = self.browser.host() {
-                host.invalidate(cef::PaintElementType::VIEW);
+            let received = rx.try_recv();
+            match received {
+                Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => {
+                    tracing::info!("All render responses received for nonce {}", nonce);
+                    break;
+                }
+
+                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {
+                    tokio::time::sleep(Duration::from_millis(5)).await;
+
+                    // if let Some(host) = self.browser.host() {
+                    //     host.invalidate(cef::PaintElementType::VIEW);
+                    // }
+                    cef::do_message_loop_work();
+                }
+                Ok(response) => {
+                    render_responses.push(response);
+                }
             }
-            cef::do_message_loop_work();
         }
+
+        Ok(crate::protocol::libserver::BatchRenderResponse { render_responses })
     }
 }
 

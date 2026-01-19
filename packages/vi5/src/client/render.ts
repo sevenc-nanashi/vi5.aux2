@@ -2,8 +2,8 @@
 
 import * as protobuf from "@bufbuild/protobuf";
 
-const canvas = document.getElementById("canvas") as HTMLCanvasElement;
-const ctx = canvas.getContext("2d")!;
+export const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+export const ctx = canvas.getContext("2d")!;
 
 const isMessage = <Desc extends protobuf.DescMessage>(
   data: protobuf.MessageShape<Desc> | protobuf.MessageInitShape<Desc>,
@@ -34,7 +34,6 @@ export function drawMessage<Desc extends protobuf.DescMessage>(
   ];
   console.log("Payload:", payload);
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
   for (let i = 0; i < payload.length; i += 3) {
     const chunk = payload.slice(i, i + 3);
     const index = i / 3;
