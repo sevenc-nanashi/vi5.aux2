@@ -14,11 +14,13 @@ env_logger = "0.11.8"
 prost = "0.14.3"
 tonic = "0.14.2"
 tonic-prost = "0.14.2"
-tokio = { version = "1.49.0", features = ["rt-multi-thread"] }
-tracing-subscriber = "0.3.22"
+tokio = { version = "1.49.0", features = ["rt-multi-thread", "signal"] }
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 tracing = "0.1.44"
 dashmap = "6.1.0"
 base64 = "0.22.1"
+tonic-reflection = "0.14.2"
+color-backtrace = "0.7.2"
 
 [build-dependencies]
 anyhow = "1.0.100"

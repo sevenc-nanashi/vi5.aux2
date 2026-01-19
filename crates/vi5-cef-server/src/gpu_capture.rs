@@ -280,6 +280,7 @@ impl GpuCapture {
             height as usize,
             bytes_per_row as usize,
         );
+        drop(data);
         buffer.unmap();
         Ok(())
     }

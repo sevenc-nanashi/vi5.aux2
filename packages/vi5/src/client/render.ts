@@ -32,13 +32,15 @@ export function drawMessage<Desc extends protobuf.DescMessage>(
     (binaryLength >> 24) & 0xff,
     ...message,
   ];
+  console.log("Payload:", payload);
 
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   for (let i = 0; i < payload.length; i += 3) {
     const chunk = payload.slice(i, i + 3);
     const index = i / 3;
     const x = index % canvas.width;
     const y = Math.floor(index / canvas.width);
-    ctx.fillStyle = `rgba(${chunk[0] || 0}, ${chunk[1] || 0}, ${chunk[2] || 0}, 1)`;
+    ctx.fillStyle = `rgb(${chunk[0] || 0}, ${chunk[1] || 0}, ${chunk[2] || 0}, 1)`;
     ctx.fillRect(x, y, 1, 1);
   }
 }

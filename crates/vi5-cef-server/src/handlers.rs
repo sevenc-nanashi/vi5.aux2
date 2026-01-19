@@ -8,6 +8,7 @@ pub struct ShutdownGuard;
 
 impl Drop for ShutdownGuard {
     fn drop(&mut self) {
+        tracing::info!("Shutting down CEF");
         shutdown();
     }
 }

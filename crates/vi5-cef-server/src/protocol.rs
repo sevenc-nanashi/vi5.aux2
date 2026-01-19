@@ -8,9 +8,9 @@ pub mod generated {
     }
     pub mod libserver {
         tonic::include_proto!("libserver");
+        pub static FILE_DESCRIPTOR_SET: &[u8] =
+            tonic::include_file_descriptor_set!("libserver_descriptor");
     }
 }
 
-pub use generated::serverjs::*;
-pub use generated::libserver::*;
-pub use generated::common::*;
+pub use generated::*;

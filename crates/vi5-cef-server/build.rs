@@ -1,13 +1,23 @@
 fn main() -> anyhow::Result<()> {
     tonic_prost_build::configure()
         .build_server(true)
+        .file_descriptor_set_path(
+            std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap())
+                .join("libserver_descriptor.bin"),
+        )
         .compile_protos(
             &[
-                "../../protocol/common.proto",
                 "../../protocol/lib-server.proto",
-                "../../protocol/server-js.proto",
+                "../../protocol/common.proto",
             ],
             &["../../protocol"],
         )?;
+    prost_build::Config::new().compile_protos(
+        &[
+            "../../protocol/server-js.proto",
+            "../../protocol/common.proto",
+        ],
+        &["../../protocol"],
+    )?;
     Ok(())
 }

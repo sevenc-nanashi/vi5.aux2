@@ -6,9 +6,28 @@ import "common.proto";
 
 message InitializeRequest { string root_path = 1; }
 
-message InitializeResponse { repeated common.ObjectInfo object_infos = 1; }
+message InitializeResponse {
+  string renderer_version = 1;
+
+  repeated common.ObjectInfo object_infos = 2;
+}
+
+message BatchRenderResponse { repeated RenderResponse render_responses = 1; }
+
+message RenderResponse {
+  oneof response {
+    SuccessRenderResponse success = 1;
+    string error_message = 2;
+  }
+}
+message SuccessRenderResponse {
+  int32 render_nonce = 1;
+  int32 width = 2;
+  int32 height = 3;
+  bytes image_data = 4;
+}
 
 service LibServer {
   rpc Initialize(InitializeRequest) returns (InitializeResponse);
-  rpc BatchRender(common.BatchRenderRequest) returns (common.BatchRenderResponse);
+  rpc BatchRender(common.BatchRenderRequest) returns (BatchRenderResponse);
 }

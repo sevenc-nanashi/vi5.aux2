@@ -12,16 +12,16 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file common.proto.
  */
 export const file_common: GenFile = /*@__PURE__*/
-  fileDesc("Cgxjb21tb24ucHJvdG8SBmNvbW1vbiJ1CgpSZW5kZXJJbmZvEg0KBW5vbmNlGAEgASgFEgoKAmlkGAIgASgJEiUKCmZyYW1lX2luZm8YAyABKAsyES5jb21tb24uRnJhbWVJbmZvEiUKCnBhcmFtZXRlcnMYBCADKAsyES5jb21tb24uUGFyYW1ldGVyIm0KCUZyYW1lSW5mbxIJCgF4GAEgASgFEgkKAXkYAiABKAUSDQoFd2lkdGgYAyABKAUSDgoGaGVpZ2h0GAQgASgFEhUKDWN1cnJlbnRfZnJhbWUYBSABKAUSFAoMdG90YWxfZnJhbWVzGAYgASgFIpEBCglQYXJhbWV0ZXISCwoDa2V5GAEgASgJEhMKCXN0cl92YWx1ZRgCIAEoCUgAEhQKCnRleHRfdmFsdWUYAyABKAlIABIUCgpib29sX3ZhbHVlGAQgASgISAASFgoMbnVtYmVyX3ZhbHVlGAUgASgBSAASFQoLY29sb3JfdmFsdWUYBiABKAVIAEIHCgV2YWx1ZSJjCgpPYmplY3RJbmZvEgoKAmlkGAEgASgJEg0KBWxhYmVsGAIgASgJEjoKFXBhcmFtZXRlcl9kZWZpbml0aW9ucxgDIAMoCzIbLmNvbW1vbi5QYXJhbWV0ZXJEZWZpbml0aW9uIoABChNQYXJhbWV0ZXJEZWZpbml0aW9uEgsKA2tleRgBIAEoCRIjCgR0eXBlGAIgASgOMhUuY29tbW9uLlBhcmFtZXRlclR5cGUSDQoFbGFiZWwYAyABKAkSKAoNZGVmYXVsdF92YWx1ZRgEIAEoCzIRLmNvbW1vbi5QYXJhbWV0ZXIiUgoOUmVuZGVyUmVzcG9uc2USDQoFbm9uY2UYASABKAkSDQoFd2lkdGgYAiABKAUSDgoGaGVpZ2h0GAMgASgFEhIKCmltYWdlX2RhdGEYBCABKAwqewoNUGFyYW1ldGVyVHlwZRIUChBQQVJBTUVURVJfU1RSSU5HEAASEgoOUEFSQU1FVEVSX1RFWFQQARIVChFQQVJBTUVURVJfQk9PTEVBThACEhQKEFBBUkFNRVRFUl9OVU1CRVIQAxITCg9QQVJBTUVURVJfQ09MT1IQBGIGcHJvdG8z");
+  fileDesc("Cgxjb21tb24ucHJvdG8SBmNvbW1vbiJ/Cg1SZW5kZXJSZXF1ZXN0EhQKDHJlbmRlcl9ub25jZRgBIAEoBRIKCgJpZBgCIAEoCRIlCgpmcmFtZV9pbmZvGAMgASgLMhEuY29tbW9uLkZyYW1lSW5mbxIlCgpwYXJhbWV0ZXJzGAQgAygLMhEuY29tbW9uLlBhcmFtZXRlciJtCglGcmFtZUluZm8SCQoBeBgBIAEoBRIJCgF5GAIgASgFEg0KBXdpZHRoGAMgASgFEg4KBmhlaWdodBgEIAEoBRIVCg1jdXJyZW50X2ZyYW1lGAUgASgFEhQKDHRvdGFsX2ZyYW1lcxgGIAEoBSKRAQoJUGFyYW1ldGVyEgsKA2tleRgBIAEoCRITCglzdHJfdmFsdWUYAiABKAlIABIUCgp0ZXh0X3ZhbHVlGAMgASgJSAASFAoKYm9vbF92YWx1ZRgEIAEoCEgAEhYKDG51bWJlcl92YWx1ZRgFIAEoAUgAEhUKC2NvbG9yX3ZhbHVlGAYgASgFSABCBwoFdmFsdWUiYwoKT2JqZWN0SW5mbxIKCgJpZBgBIAEoCRINCgVsYWJlbBgCIAEoCRI6ChVwYXJhbWV0ZXJfZGVmaW5pdGlvbnMYAyADKAsyGy5jb21tb24uUGFyYW1ldGVyRGVmaW5pdGlvbiKAAQoTUGFyYW1ldGVyRGVmaW5pdGlvbhILCgNrZXkYASABKAkSIwoEdHlwZRgCIAEoDjIVLmNvbW1vbi5QYXJhbWV0ZXJUeXBlEg0KBWxhYmVsGAMgASgJEigKDWRlZmF1bHRfdmFsdWUYBCABKAsyES5jb21tb24uUGFyYW1ldGVyIkQKEkJhdGNoUmVuZGVyUmVxdWVzdBIuCg9yZW5kZXJfcmVxdWVzdHMYASADKAsyFS5jb21tb24uUmVuZGVyUmVxdWVzdCp7Cg1QYXJhbWV0ZXJUeXBlEhQKEFBBUkFNRVRFUl9TVFJJTkcQABISCg5QQVJBTUVURVJfVEVYVBABEhUKEVBBUkFNRVRFUl9CT09MRUFOEAISFAoQUEFSQU1FVEVSX05VTUJFUhADEhMKD1BBUkFNRVRFUl9DT0xPUhAEYgZwcm90bzM");
 
 /**
- * @generated from message common.RenderInfo
+ * @generated from message common.RenderRequest
  */
-export type RenderInfo = Message<"common.RenderInfo"> & {
+export type RenderRequest = Message<"common.RenderRequest"> & {
   /**
-   * @generated from field: int32 nonce = 1;
+   * @generated from field: int32 render_nonce = 1;
    */
-  nonce: number;
+  renderNonce: number;
 
   /**
    * @generated from field: string id = 2;
@@ -40,10 +40,10 @@ export type RenderInfo = Message<"common.RenderInfo"> & {
 };
 
 /**
- * Describes the message common.RenderInfo.
- * Use `create(RenderInfoSchema)` to create a new message.
+ * Describes the message common.RenderRequest.
+ * Use `create(RenderRequestSchema)` to create a new message.
  */
-export const RenderInfoSchema: GenMessage<RenderInfo> = /*@__PURE__*/
+export const RenderRequestSchema: GenMessage<RenderRequest> = /*@__PURE__*/
   messageDesc(file_common, 0);
 
 /**
@@ -200,35 +200,20 @@ export const ParameterDefinitionSchema: GenMessage<ParameterDefinition> = /*@__P
   messageDesc(file_common, 4);
 
 /**
- * @generated from message common.RenderResponse
+ * @generated from message common.BatchRenderRequest
  */
-export type RenderResponse = Message<"common.RenderResponse"> & {
+export type BatchRenderRequest = Message<"common.BatchRenderRequest"> & {
   /**
-   * @generated from field: string nonce = 1;
+   * @generated from field: repeated common.RenderRequest render_requests = 1;
    */
-  nonce: string;
-
-  /**
-   * @generated from field: int32 width = 2;
-   */
-  width: number;
-
-  /**
-   * @generated from field: int32 height = 3;
-   */
-  height: number;
-
-  /**
-   * @generated from field: bytes image_data = 4;
-   */
-  imageData: Uint8Array;
+  renderRequests: RenderRequest[];
 };
 
 /**
- * Describes the message common.RenderResponse.
- * Use `create(RenderResponseSchema)` to create a new message.
+ * Describes the message common.BatchRenderRequest.
+ * Use `create(BatchRenderRequestSchema)` to create a new message.
  */
-export const RenderResponseSchema: GenMessage<RenderResponse> = /*@__PURE__*/
+export const BatchRenderRequestSchema: GenMessage<BatchRenderRequest> = /*@__PURE__*/
   messageDesc(file_common, 5);
 
 /**

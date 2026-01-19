@@ -1,6 +1,6 @@
 use cef::{
-    Browser, BrowserSettings, CefString, ImplBrowser, ImplBrowserHost, ImplCommandLine, ImplFrame,
-    Settings, WindowHandle, WindowInfo, execute_process,
+    Browser, BrowserSettings, CefString, ImplBrowser, ImplBrowserHost, ImplCommandLine, Settings,
+    WindowHandle, WindowInfo, execute_process,
 };
 
 use crate::handlers::ShutdownGuard;

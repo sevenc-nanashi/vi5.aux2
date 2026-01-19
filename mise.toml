@@ -3,3 +3,4 @@ lockfile = true
 
 [tools]
 bun = "latest"
+"github:fullstorydev/grpcui" = "latest"

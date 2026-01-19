@@ -21,3 +21,8 @@ backend = "core:bun"
 "platforms.macos-x64-baseline" = { checksum = "sha256:b2d8994d4cf70641366d69b87420b805d1d984f4ea7e16a352df156949474fa5", url = "https://github.com/oven-sh/bun/releases/download/bun-v1.3.6/bun-darwin-x64-baseline.zip"}
 "platforms.windows-x64" = { checksum = "sha256:7356f20f646d7047bee9eb7a3d5344019bedce778bfab3cccd5dd1ee2df6177f", url = "https://github.com/oven-sh/bun/releases/download/bun-v1.3.6/bun-windows-x64.zip"}
 "platforms.windows-x64-baseline" = { checksum = "sha256:2ab7cb878041529617dcb86f9e8cb59539779ecb5ebe115a9eba2fa8361736b6", url = "https://github.com/oven-sh/bun/releases/download/bun-v1.3.6/bun-windows-x64-baseline.zip"}
+
+[[tools."github:fullstorydev/grpcui"]]
+version = "1.4.3"
+backend = "github:fullstorydev/grpcui"
+"platforms.windows-x64" = { checksum = "sha256:6df6fcebb009e7af10081d8113c57b95e4247c457a6cb6d7abc609cd8cd43be1", url = "https://github.com/fullstorydev/grpcui/releases/download/v1.4.3/grpcui_1.4.3_windows_x86_64.zip", url_api = "https://api.github.com/repos/fullstorydev/grpcui/releases/assets/236615348"}

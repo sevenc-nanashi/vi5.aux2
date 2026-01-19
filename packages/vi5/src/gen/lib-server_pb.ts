@@ -4,12 +4,155 @@
 // @generated from file lib-server.proto (package libserver, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { BatchRenderRequestSchema, ObjectInfo } from "./common_pb";
+import { file_common } from "./common_pb";
+import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file lib-server.proto.
  */
 export const file_lib_server: GenFile = /*@__PURE__*/
-  fileDesc("ChBsaWItc2VydmVyLnByb3RvEglsaWJzZXJ2ZXJiBnByb3RvMw");
+  fileDesc("ChBsaWItc2VydmVyLnByb3RvEglsaWJzZXJ2ZXIiJgoRSW5pdGlhbGl6ZVJlcXVlc3QSEQoJcm9vdF9wYXRoGAEgASgJIlgKEkluaXRpYWxpemVSZXNwb25zZRIYChByZW5kZXJlcl92ZXJzaW9uGAEgASgJEigKDG9iamVjdF9pbmZvcxgCIAMoCzISLmNvbW1vbi5PYmplY3RJbmZvIkoKE0JhdGNoUmVuZGVyUmVzcG9uc2USMwoQcmVuZGVyX3Jlc3BvbnNlcxgBIAMoCzIZLmxpYnNlcnZlci5SZW5kZXJSZXNwb25zZSJqCg5SZW5kZXJSZXNwb25zZRIzCgdzdWNjZXNzGAEgASgLMiAubGlic2VydmVyLlN1Y2Nlc3NSZW5kZXJSZXNwb25zZUgAEhcKDWVycm9yX21lc3NhZ2UYAiABKAlIAEIKCghyZXNwb25zZSJgChVTdWNjZXNzUmVuZGVyUmVzcG9uc2USFAoMcmVuZGVyX25vbmNlGAEgASgFEg0KBXdpZHRoGAIgASgFEg4KBmhlaWdodBgDIAEoBRISCgppbWFnZV9kYXRhGAQgASgMMqEBCglMaWJTZXJ2ZXISSQoKSW5pdGlhbGl6ZRIcLmxpYnNlcnZlci5Jbml0aWFsaXplUmVxdWVzdBodLmxpYnNlcnZlci5Jbml0aWFsaXplUmVzcG9uc2USSQoLQmF0Y2hSZW5kZXISGi5jb21tb24uQmF0Y2hSZW5kZXJSZXF1ZXN0Gh4ubGlic2VydmVyLkJhdGNoUmVuZGVyUmVzcG9uc2ViBnByb3RvMw", [file_common]);
+
+/**
+ * @generated from message libserver.InitializeRequest
+ */
+export type InitializeRequest = Message<"libserver.InitializeRequest"> & {
+  /**
+   * @generated from field: string root_path = 1;
+   */
+  rootPath: string;
+};
+
+/**
+ * Describes the message libserver.InitializeRequest.
+ * Use `create(InitializeRequestSchema)` to create a new message.
+ */
+export const InitializeRequestSchema: GenMessage<InitializeRequest> = /*@__PURE__*/
+  messageDesc(file_lib_server, 0);
+
+/**
+ * @generated from message libserver.InitializeResponse
+ */
+export type InitializeResponse = Message<"libserver.InitializeResponse"> & {
+  /**
+   * @generated from field: string renderer_version = 1;
+   */
+  rendererVersion: string;
+
+  /**
+   * @generated from field: repeated common.ObjectInfo object_infos = 2;
+   */
+  objectInfos: ObjectInfo[];
+};
+
+/**
+ * Describes the message libserver.InitializeResponse.
+ * Use `create(InitializeResponseSchema)` to create a new message.
+ */
+export const InitializeResponseSchema: GenMessage<InitializeResponse> = /*@__PURE__*/
+  messageDesc(file_lib_server, 1);
+
+/**
+ * @generated from message libserver.BatchRenderResponse
+ */
+export type BatchRenderResponse = Message<"libserver.BatchRenderResponse"> & {
+  /**
+   * @generated from field: repeated libserver.RenderResponse render_responses = 1;
+   */
+  renderResponses: RenderResponse[];
+};
+
+/**
+ * Describes the message libserver.BatchRenderResponse.
+ * Use `create(BatchRenderResponseSchema)` to create a new message.
+ */
+export const BatchRenderResponseSchema: GenMessage<BatchRenderResponse> = /*@__PURE__*/
+  messageDesc(file_lib_server, 2);
+
+/**
+ * @generated from message libserver.RenderResponse
+ */
+export type RenderResponse = Message<"libserver.RenderResponse"> & {
+  /**
+   * @generated from oneof libserver.RenderResponse.response
+   */
+  response: {
+    /**
+     * @generated from field: libserver.SuccessRenderResponse success = 1;
+     */
+    value: SuccessRenderResponse;
+    case: "success";
+  } | {
+    /**
+     * @generated from field: string error_message = 2;
+     */
+    value: string;
+    case: "errorMessage";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message libserver.RenderResponse.
+ * Use `create(RenderResponseSchema)` to create a new message.
+ */
+export const RenderResponseSchema: GenMessage<RenderResponse> = /*@__PURE__*/
+  messageDesc(file_lib_server, 3);
+
+/**
+ * @generated from message libserver.SuccessRenderResponse
+ */
+export type SuccessRenderResponse = Message<"libserver.SuccessRenderResponse"> & {
+  /**
+   * @generated from field: int32 render_nonce = 1;
+   */
+  renderNonce: number;
+
+  /**
+   * @generated from field: int32 width = 2;
+   */
+  width: number;
+
+  /**
+   * @generated from field: int32 height = 3;
+   */
+  height: number;
+
+  /**
+   * @generated from field: bytes image_data = 4;
+   */
+  imageData: Uint8Array;
+};
+
+/**
+ * Describes the message libserver.SuccessRenderResponse.
+ * Use `create(SuccessRenderResponseSchema)` to create a new message.
+ */
+export const SuccessRenderResponseSchema: GenMessage<SuccessRenderResponse> = /*@__PURE__*/
+  messageDesc(file_lib_server, 4);
+
+/**
+ * @generated from service libserver.LibServer
+ */
+export const LibServer: GenService<{
+  /**
+   * @generated from rpc libserver.LibServer.Initialize
+   */
+  initialize: {
+    methodKind: "unary";
+    input: typeof InitializeRequestSchema;
+    output: typeof InitializeResponseSchema;
+  },
+  /**
+   * @generated from rpc libserver.LibServer.BatchRender
+   */
+  batchRender: {
+    methodKind: "unary";
+    input: typeof BatchRenderRequestSchema;
+    output: typeof BatchRenderResponseSchema;
+  },
+}> = /*@__PURE__*/
+  serviceDesc(file_lib_server, 0);
 

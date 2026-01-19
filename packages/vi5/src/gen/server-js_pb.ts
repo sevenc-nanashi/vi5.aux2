@@ -6,7 +6,6 @@
 
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
-import type { RenderInfo, RenderResponse } from "./common_pb";
 import { file_common } from "./common_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -14,56 +13,93 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file server-js.proto.
  */
 export const file_server_js: GenFile = /*@__PURE__*/
-  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzIh4KBEluZm8SFgoOc2VydmVyX3ZlcnNpb24YASABKAkiPgoSQmF0Y2hSZW5kZXJSZXF1ZXN0EigKDHJlbmRlcl9pbmZvcxgBIAMoCzISLmNvbW1vbi5SZW5kZXJJbmZvIkcKE0JhdGNoUmVuZGVyUmVzcG9uc2USMAoQcmVuZGVyX3Jlc3BvbnNlcxgBIAMoCzIWLmNvbW1vbi5SZW5kZXJSZXNwb25zZWIGcHJvdG8z", [file_common]);
+  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzIioKDkluaXRpYWxpemVJbmZvEhgKEHJlbmRlcmVyX3ZlcnNpb24YASABKAkiUAoKQ2FudmFzSW5mbxINCgVub25jZRgBIAEoBRIJCgF4GAIgASgFEgkKAXkYAyABKAUSDQoFd2lkdGgYBCABKAUSDgoGaGVpZ2h0GAUgASgFIoUBCh1NYXliZUluY29tcGxldGVSZW5kZXJSZXNwb25zZRIrCgtjYW52YXNfaW5mbxgBIAEoCzIULnNlcnZlcmpzLkNhbnZhc0luZm9IABIXCg1lcnJvcl9tZXNzYWdlGAIgASgJSAASEgoKaW5jb21wbGV0ZRgDIAEoCEIKCghyZXNwb25zZWIGcHJvdG8z", [file_common]);
 
 /**
- * @generated from message serverjs.Info
+ * @generated from message serverjs.InitializeInfo
  */
-export type Info = Message<"serverjs.Info"> & {
+export type InitializeInfo = Message<"serverjs.InitializeInfo"> & {
   /**
-   * @generated from field: string server_version = 1;
+   * @generated from field: string renderer_version = 1;
    */
-  serverVersion: string;
+  rendererVersion: string;
 };
 
 /**
- * Describes the message serverjs.Info.
- * Use `create(InfoSchema)` to create a new message.
+ * Describes the message serverjs.InitializeInfo.
+ * Use `create(InitializeInfoSchema)` to create a new message.
  */
-export const InfoSchema: GenMessage<Info> = /*@__PURE__*/
+export const InitializeInfoSchema: GenMessage<InitializeInfo> = /*@__PURE__*/
   messageDesc(file_server_js, 0);
 
 /**
- * @generated from message serverjs.BatchRenderRequest
+ * @generated from message serverjs.CanvasInfo
  */
-export type BatchRenderRequest = Message<"serverjs.BatchRenderRequest"> & {
+export type CanvasInfo = Message<"serverjs.CanvasInfo"> & {
   /**
-   * @generated from field: repeated common.RenderInfo render_infos = 1;
+   * @generated from field: int32 nonce = 1;
    */
-  renderInfos: RenderInfo[];
+  nonce: number;
+
+  /**
+   * @generated from field: int32 x = 2;
+   */
+  x: number;
+
+  /**
+   * @generated from field: int32 y = 3;
+   */
+  y: number;
+
+  /**
+   * @generated from field: int32 width = 4;
+   */
+  width: number;
+
+  /**
+   * @generated from field: int32 height = 5;
+   */
+  height: number;
 };
 
 /**
- * Describes the message serverjs.BatchRenderRequest.
- * Use `create(BatchRenderRequestSchema)` to create a new message.
+ * Describes the message serverjs.CanvasInfo.
+ * Use `create(CanvasInfoSchema)` to create a new message.
  */
-export const BatchRenderRequestSchema: GenMessage<BatchRenderRequest> = /*@__PURE__*/
+export const CanvasInfoSchema: GenMessage<CanvasInfo> = /*@__PURE__*/
   messageDesc(file_server_js, 1);
 
 /**
- * @generated from message serverjs.BatchRenderResponse
+ * @generated from message serverjs.MaybeIncompleteRenderResponse
  */
-export type BatchRenderResponse = Message<"serverjs.BatchRenderResponse"> & {
+export type MaybeIncompleteRenderResponse = Message<"serverjs.MaybeIncompleteRenderResponse"> & {
   /**
-   * @generated from field: repeated common.RenderResponse render_responses = 1;
+   * @generated from oneof serverjs.MaybeIncompleteRenderResponse.response
    */
-  renderResponses: RenderResponse[];
+  response: {
+    /**
+     * @generated from field: serverjs.CanvasInfo canvas_info = 1;
+     */
+    value: CanvasInfo;
+    case: "canvasInfo";
+  } | {
+    /**
+     * @generated from field: string error_message = 2;
+     */
+    value: string;
+    case: "errorMessage";
+  } | { case: undefined; value?: undefined };
+
+  /**
+   * @generated from field: bool incomplete = 3;
+   */
+  incomplete: boolean;
 };
 
 /**
- * Describes the message serverjs.BatchRenderResponse.
- * Use `create(BatchRenderResponseSchema)` to create a new message.
+ * Describes the message serverjs.MaybeIncompleteRenderResponse.
+ * Use `create(MaybeIncompleteRenderResponseSchema)` to create a new message.
  */
-export const BatchRenderResponseSchema: GenMessage<BatchRenderResponse> = /*@__PURE__*/
+export const MaybeIncompleteRenderResponseSchema: GenMessage<MaybeIncompleteRenderResponse> = /*@__PURE__*/
   messageDesc(file_server_js, 2);
 
