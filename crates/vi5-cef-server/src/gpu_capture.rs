@@ -1,10 +1,6 @@
 use std::sync::mpsc;
 
-use log::info;
-
-use cef::{osr_texture_import::SharedTextureHandle, AcceleratedPaintInfo, ColorType};
-
-use crate::types::RenderedFrame;
+use cef::{AcceleratedPaintInfo, osr_texture_import::SharedTextureHandle};
 
 pub struct GpuCapture {
     device: wgpu::Device,
@@ -33,7 +29,7 @@ impl GpuCapture {
                 adapter_info.backend
             );
         }
-        info!("Using wgpu backend: {:?}", adapter_info.backend);
+        tracing::info!("Using wgpu backend: {:?}", adapter_info.backend);
         let device_desc = wgpu::DeviceDescriptor {
             label: Some("cef-osr-device"),
             required_features: wgpu::Features::empty(),
@@ -120,7 +116,16 @@ impl GpuCapture {
         })
     }
 
-    pub fn capture(&self, info: &AcceleratedPaintInfo) -> anyhow::Result<RenderedFrame> {
+    pub fn capture(
+        &self,
+        info: &AcceleratedPaintInfo,
+        on_accelerated_paint: fn(
+            buffer: &wgpu::BufferView,
+            width: usize,
+            height: usize,
+            bytes_per_row: usize,
+        ),
+    ) -> anyhow::Result<()> {
         let width = info.extra.coded_size.width;
         let height = info.extra.coded_size.height;
         if width <= 0 || height <= 0 {
@@ -133,7 +138,7 @@ impl GpuCapture {
             &rgba_texture,
             width as u32,
             height as u32,
-            ColorType::RGBA_8888,
+            on_accelerated_paint,
         )
     }
 
@@ -208,8 +213,14 @@ impl GpuCapture {
         texture: &wgpu::Texture,
         width: u32,
         height: u32,
-        format: ColorType,
-    ) -> anyhow::Result<RenderedFrame> {
+
+        on_accelerated_paint: fn(
+            buffer: &wgpu::BufferView,
+            width: usize,
+            height: usize,
+            bytes_per_row: usize,
+        ),
+    ) -> anyhow::Result<()> {
         let bytes_per_pixel = 4;
         let bytes_per_row = align_to(width * bytes_per_pixel, wgpu::COPY_BYTES_PER_ROW_ALIGNMENT);
         let buffer_size = bytes_per_row as u64 * height as u64;
@@ -263,33 +274,18 @@ impl GpuCapture {
             Err(err) => anyhow::bail!("readback map dropped: {err}"),
         }
         let data = slice.get_mapped_range();
-        let mut rgba = vec![0u8; (width * height * bytes_per_pixel) as usize];
-        for y in 0..height {
-            let src_offset = (y * bytes_per_row) as usize;
-            let dst_offset = (y * width * bytes_per_pixel) as usize;
-            let src_row = &data[src_offset..src_offset + (width * bytes_per_pixel) as usize];
-            let dst_row = &mut rgba[dst_offset..dst_offset + (width * bytes_per_pixel) as usize];
-            if format == ColorType::BGRA_8888 {
-                for (src_px, dst_px) in src_row.chunks_exact(4).zip(dst_row.chunks_exact_mut(4)) {
-                    dst_px[0] = src_px[2];
-                    dst_px[1] = src_px[1];
-                    dst_px[2] = src_px[0];
-                    dst_px[3] = src_px[3];
-                }
-            } else {
-                dst_row.copy_from_slice(src_row);
-            }
-        }
-        drop(data);
+        on_accelerated_paint(
+            &data,
+            width as usize,
+            height as usize,
+            bytes_per_row as usize,
+        );
         buffer.unmap();
-        Ok(RenderedFrame {
-            width: width as usize,
-            height: height as usize,
-            rgba,
-        })
+        Ok(())
     }
 }
 
 fn align_to(value: u32, alignment: u32) -> u32 {
     value.div_ceil(alignment) * alignment
 }
+

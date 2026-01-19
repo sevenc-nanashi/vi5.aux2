@@ -7,8 +7,20 @@ edition = "2024"
 anyhow = "1.0.100"
 cef = { version = "143.7.1", features = ["accelerated_osr"] }
 image = "0.25.9"
-log = "0.4.29"
 pollster = "0.4.0"
 rand = "0.9.2"
 wgpu = "28"
 env_logger = "0.11.8"
+prost = "0.14.3"
+tonic = "0.14.2"
+tonic-prost = "0.14.2"
+tokio = { version = "1.49.0", features = ["rt-multi-thread"] }
+tracing-subscriber = "0.3.22"
+tracing = "0.1.44"
+dashmap = "6.1.0"
+base64 = "0.22.1"
+
+[build-dependencies]
+anyhow = "1.0.100"
+prost-build = "0.14.3"
+tonic-prost-build = "0.14.2"

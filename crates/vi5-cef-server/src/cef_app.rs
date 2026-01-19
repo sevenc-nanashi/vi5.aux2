@@ -1,8 +1,6 @@
-use log::info;
-
 use cef::{
-    execute_process, Browser, BrowserSettings, CefString, ImplBrowser, ImplBrowserHost,
-    ImplCommandLine, ImplFrame, Settings, WindowHandle, WindowInfo,
+    Browser, BrowserSettings, CefString, ImplBrowser, ImplBrowserHost, ImplCommandLine, ImplFrame,
+    Settings, WindowHandle, WindowInfo, execute_process,
 };
 
 use crate::handlers::ShutdownGuard;
@@ -31,10 +29,10 @@ pub fn prepare_process(args: &cef::args::Args) -> anyhow::Result<bool> {
 
     let process_id = std::process::id();
     if is_browser_process {
-        info!("launch browser process {process_id}");
+        tracing::info!("launch browser process {process_id}");
     } else {
         let process_type = CefString::from(&cmd.switch_value(Some(&switch)));
-        info!(
+        tracing::info!(
             "launch non-browser process {process_id} of type {:?}",
             process_type
         );
@@ -77,7 +75,7 @@ pub fn initialize_cef(
     Ok(ShutdownGuard)
 }
 
-pub fn create_browser(client: &mut cef::Client, url: &str) -> Result<Browser, RenderError> {
+pub fn create_browser(client: &mut cef::Client) -> Result<Browser, RenderError> {
     let parent: WindowHandle = cef::sys::HWND::default();
     let mut window_info = WindowInfo::default().set_as_windowless(parent);
     window_info.shared_texture_enabled = 1;
@@ -90,7 +88,7 @@ pub fn create_browser(client: &mut cef::Client, url: &str) -> Result<Browser, Re
     let browser = cef::browser_host_create_browser_sync(
         Some(&window_info),
         Some(client),
-        Some(&CefString::from(url)),
+        Some(&CefString::from("about:blank")),
         Some(&browser_settings),
         None,
         None,
@@ -103,10 +101,6 @@ pub fn create_browser(client: &mut cef::Client, url: &str) -> Result<Browser, Re
 
     if let Some(host) = browser.host() {
         host.was_resized();
-    }
-
-    if let Some(frame) = browser.main_frame() {
-        frame.load_url(Some(&CefString::from(url)));
     }
 
     Ok(browser)

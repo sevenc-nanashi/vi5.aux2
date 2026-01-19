@@ -51,17 +51,18 @@ type InferParameters<
   [K in keyof T]: ParameterType<T[K]["type"]>;
 };
 
-type Option<
+type Vi5Object<
   T extends Record<string, ParameterDefinition<keyof typeof parameterTypes>>,
 > = {
   name: string;
   parameters: T;
+  setup?: (params: InferParameters<T>) => Promise<void> | void;
   draw: (params: InferParameters<T>) => void;
 };
 
 export function defineObject<
   T extends Record<string, ParameterDefinition<keyof typeof parameterTypes>>,
->(option: Option<T>): Option<T> {
+>(option: Vi5Object<T>): Vi5Object<T> {
   return option;
 }
 

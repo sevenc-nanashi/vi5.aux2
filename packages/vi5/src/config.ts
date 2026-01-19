@@ -1,5 +1,15 @@
-export interface Config {}
+import type { UserConfig as ViteConfig } from "vite";
 
-export function defineConfig(config: Config) {
+export interface Config {
+  vite: ViteConfig;
+}
+
+type ConfigExport =
+  | Config
+  | (() => Config)
+  | Promise<Config>
+  | (() => Promise<Config>);
+
+export function defineConfig(config: ConfigExport): ConfigExport {
   return config;
 }

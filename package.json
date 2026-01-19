@@ -1,4 +1,8 @@
 {
   "name": "vi5-root",
-  "packageManager": "pnpm@10.28.0"
+  "packageManager": "pnpm@10.28.0",
+  "devDependencies": {
+    "@bufbuild/buf": "^1.63.0",
+    "@bufbuild/protoc-gen-es": "^2.10.2"
+  }
 }

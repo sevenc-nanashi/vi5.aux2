@@ -5,10 +5,22 @@ package serverjs;
 
 import "common.proto";
 
-message BatchRenderRequest {
-  repeated common.RenderInfo render_infos = 1;
+message Info { string server_version = 1; }
+
+message CanvasInfo {
+  int32 x = 1;
+  int32 y = 2;
+  int32 width = 3;
+  int32 height = 4;
+}
+message CanvasError {
+  string message = 1;
 }
 
-message BatchRenderResponse {
-  repeated common.RenderResponse render_responses = 1;
+message MaybeIncompleteRenderResponse {
+  oneof response {
+    common.RenderResponse render_response = 1;
+    CanvasError canvas_error = 2;
+  }
+  bool incomplete = 3;
 }

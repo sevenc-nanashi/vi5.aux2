@@ -4,15 +4,15 @@
 // @generated from file common.proto (package common, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file common.proto.
  */
 export const file_common: GenFile = /*@__PURE__*/
-  fileDesc("Cgxjb21tb24ucHJvdG8SBmNvbW1vbiJ1CgpSZW5kZXJJbmZvEg0KBW5vbmNlGAEgASgFEgoKAmlkGAIgASgJEiUKCmZyYW1lX2luZm8YAyABKAsyES5jb21tb24uRnJhbWVJbmZvEiUKCnBhcmFtZXRlcnMYBCADKAsyES5jb21tb24uUGFyYW1ldGVyIm0KCUZyYW1lSW5mbxIJCgF4GAEgASgFEgkKAXkYAiABKAUSDQoFd2lkdGgYAyABKAUSDgoGaGVpZ2h0GAQgASgFEhUKDWN1cnJlbnRfZnJhbWUYBSABKAUSFAoMdG90YWxfZnJhbWVzGAYgASgFIpEBCglQYXJhbWV0ZXISCwoDa2V5GAEgASgJEhMKCXN0cl92YWx1ZRgCIAEoCUgAEhQKCnRleHRfdmFsdWUYAyABKAlIABIUCgpib29sX3ZhbHVlGAQgASgISAASFgoMbnVtYmVyX3ZhbHVlGAUgASgBSAASFQoLY29sb3JfdmFsdWUYBiABKAVIAEIHCgV2YWx1ZSJSCg5SZW5kZXJSZXNwb25zZRINCgVub25jZRgBIAEoCRINCgV3aWR0aBgCIAEoBRIOCgZoZWlnaHQYAyABKAUSEgoKaW1hZ2VfZGF0YRgEIAEoDGIGcHJvdG8z");
+  fileDesc("Cgxjb21tb24ucHJvdG8SBmNvbW1vbiJ1CgpSZW5kZXJJbmZvEg0KBW5vbmNlGAEgASgFEgoKAmlkGAIgASgJEiUKCmZyYW1lX2luZm8YAyABKAsyES5jb21tb24uRnJhbWVJbmZvEiUKCnBhcmFtZXRlcnMYBCADKAsyES5jb21tb24uUGFyYW1ldGVyIm0KCUZyYW1lSW5mbxIJCgF4GAEgASgFEgkKAXkYAiABKAUSDQoFd2lkdGgYAyABKAUSDgoGaGVpZ2h0GAQgASgFEhUKDWN1cnJlbnRfZnJhbWUYBSABKAUSFAoMdG90YWxfZnJhbWVzGAYgASgFIpEBCglQYXJhbWV0ZXISCwoDa2V5GAEgASgJEhMKCXN0cl92YWx1ZRgCIAEoCUgAEhQKCnRleHRfdmFsdWUYAyABKAlIABIUCgpib29sX3ZhbHVlGAQgASgISAASFgoMbnVtYmVyX3ZhbHVlGAUgASgBSAASFQoLY29sb3JfdmFsdWUYBiABKAVIAEIHCgV2YWx1ZSJjCgpPYmplY3RJbmZvEgoKAmlkGAEgASgJEg0KBWxhYmVsGAIgASgJEjoKFXBhcmFtZXRlcl9kZWZpbml0aW9ucxgDIAMoCzIbLmNvbW1vbi5QYXJhbWV0ZXJEZWZpbml0aW9uIoABChNQYXJhbWV0ZXJEZWZpbml0aW9uEgsKA2tleRgBIAEoCRIjCgR0eXBlGAIgASgOMhUuY29tbW9uLlBhcmFtZXRlclR5cGUSDQoFbGFiZWwYAyABKAkSKAoNZGVmYXVsdF92YWx1ZRgEIAEoCzIRLmNvbW1vbi5QYXJhbWV0ZXIiUgoOUmVuZGVyUmVzcG9uc2USDQoFbm9uY2UYASABKAkSDQoFd2lkdGgYAiABKAUSDgoGaGVpZ2h0GAMgASgFEhIKCmltYWdlX2RhdGEYBCABKAwqewoNUGFyYW1ldGVyVHlwZRIUChBQQVJBTUVURVJfU1RSSU5HEAASEgoOUEFSQU1FVEVSX1RFWFQQARIVChFQQVJBTUVURVJfQk9PTEVBThACEhQKEFBBUkFNRVRFUl9OVU1CRVIQAxITCg9QQVJBTUVURVJfQ09MT1IQBGIGcHJvdG8z");
 
 /**
  * @generated from message common.RenderInfo
@@ -141,6 +141,65 @@ export const ParameterSchema: GenMessage<Parameter> = /*@__PURE__*/
   messageDesc(file_common, 2);
 
 /**
+ * @generated from message common.ObjectInfo
+ */
+export type ObjectInfo = Message<"common.ObjectInfo"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string label = 2;
+   */
+  label: string;
+
+  /**
+   * @generated from field: repeated common.ParameterDefinition parameter_definitions = 3;
+   */
+  parameterDefinitions: ParameterDefinition[];
+};
+
+/**
+ * Describes the message common.ObjectInfo.
+ * Use `create(ObjectInfoSchema)` to create a new message.
+ */
+export const ObjectInfoSchema: GenMessage<ObjectInfo> = /*@__PURE__*/
+  messageDesc(file_common, 3);
+
+/**
+ * @generated from message common.ParameterDefinition
+ */
+export type ParameterDefinition = Message<"common.ParameterDefinition"> & {
+  /**
+   * @generated from field: string key = 1;
+   */
+  key: string;
+
+  /**
+   * @generated from field: common.ParameterType type = 2;
+   */
+  type: ParameterType;
+
+  /**
+   * @generated from field: string label = 3;
+   */
+  label: string;
+
+  /**
+   * @generated from field: common.Parameter default_value = 4;
+   */
+  defaultValue?: Parameter;
+};
+
+/**
+ * Describes the message common.ParameterDefinition.
+ * Use `create(ParameterDefinitionSchema)` to create a new message.
+ */
+export const ParameterDefinitionSchema: GenMessage<ParameterDefinition> = /*@__PURE__*/
+  messageDesc(file_common, 4);
+
+/**
  * @generated from message common.RenderResponse
  */
 export type RenderResponse = Message<"common.RenderResponse"> & {
@@ -170,5 +229,41 @@ export type RenderResponse = Message<"common.RenderResponse"> & {
  * Use `create(RenderResponseSchema)` to create a new message.
  */
 export const RenderResponseSchema: GenMessage<RenderResponse> = /*@__PURE__*/
-  messageDesc(file_common, 3);
+  messageDesc(file_common, 5);
+
+/**
+ * @generated from enum common.ParameterType
+ */
+export enum ParameterType {
+  /**
+   * @generated from enum value: PARAMETER_STRING = 0;
+   */
+  PARAMETER_STRING = 0,
+
+  /**
+   * @generated from enum value: PARAMETER_TEXT = 1;
+   */
+  PARAMETER_TEXT = 1,
+
+  /**
+   * @generated from enum value: PARAMETER_BOOLEAN = 2;
+   */
+  PARAMETER_BOOLEAN = 2,
+
+  /**
+   * @generated from enum value: PARAMETER_NUMBER = 3;
+   */
+  PARAMETER_NUMBER = 3,
+
+  /**
+   * @generated from enum value: PARAMETER_COLOR = 4;
+   */
+  PARAMETER_COLOR = 4,
+}
+
+/**
+ * Describes the enum common.ParameterType.
+ */
+export const ParameterTypeSchema: GenEnum<ParameterType> = /*@__PURE__*/
+  enumDesc(file_common, 0);
 

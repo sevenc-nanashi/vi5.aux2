@@ -5,19 +5,6 @@ pub struct RenderOptions {
 }
 
 #[derive(Debug)]
-pub struct RenderedFrame {
-    pub width: usize,
-    pub height: usize,
-    pub rgba: Vec<u8>,
-}
-
-#[derive(Debug)]
-pub enum RenderMessage {
-    Software(RenderedFrame),
-    Accelerated(RenderedFrame),
-}
-
-#[derive(Debug)]
 pub enum RenderError {
     InitializeFailed,
     BrowserCreateFailed,

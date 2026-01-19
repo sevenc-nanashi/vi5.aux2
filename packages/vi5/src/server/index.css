@@ -1,0 +1,15 @@
+#canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 2048px;
+  height: 2048px;
+}
+canvas:not(#canvas) {
+  display: none;
+}
+
+body,
+html {
+  background: transparent;
+}

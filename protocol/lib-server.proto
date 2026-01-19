@@ -2,4 +2,13 @@
 syntax = "proto3";
 package libserver;
 
+import "common.proto";
 
+message InitializeRequest { string root_path = 1; }
+
+message InitializeResponse { repeated common.ObjectInfo object_infos = 1; }
+
+service LibServer {
+  rpc Initialize(InitializeRequest) returns (InitializeResponse);
+  rpc BatchRender(common.BatchRenderRequest) returns (common.BatchRenderResponse);
+}

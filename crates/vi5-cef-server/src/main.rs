@@ -1,22 +1,29 @@
 mod cef_app;
 mod gpu_capture;
 mod handlers;
+mod protocol;
 mod render_loop;
+mod server;
 mod types;
 
-use std::sync::{Arc, atomic::AtomicBool, mpsc};
-
-use render_loop::RenderLoop;
+use std::sync::Arc;
 
 use crate::cef_app::{
     build_render_options, build_settings, create_browser, initialize_cef, prepare_process,
 };
 use crate::gpu_capture::GpuCapture;
 use crate::handlers::create_client;
+use crate::render_loop::RenderLoop;
 
 fn main() -> anyhow::Result<()> {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-        .target(env_logger::Target::Stderr)
+    // env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+    //     .target(env_logger::Target::Stderr)
+    //     .init();
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .with_thread_ids(true)
+        .with_thread_names(true)
+        .with_writer(std::io::stderr)
         .init();
 
     let _ = cef::api_hash(cef::sys::CEF_API_VERSION_LAST, 0);
@@ -25,31 +32,39 @@ fn main() -> anyhow::Result<()> {
     let options = build_render_options();
     let is_browser_process = prepare_process(&args)?;
     if !is_browser_process {
-        log::info!("Initialized as a secondary process, exiting main.");
+        tracing::info!("Initialized as a secondary process, exiting main.");
         return Ok(());
     }
 
     let settings = build_settings();
     let _shutdown_guard = initialize_cef(&args, &settings)?;
 
-    let (tx, rx) = mpsc::channel();
-    let sent = Arc::new(AtomicBool::new(false));
-    let loaded = Arc::new(AtomicBool::new(false));
     let gpu = Arc::new(GpuCapture::new()?);
 
-    let url = "http://localhost:5173/";
-    log::info!("create browser for {url}");
-    let mut client = create_client(&options, sent, loaded.clone(), gpu, tx);
-    let browser = create_browser(&mut client, url)?;
-    let render_loop = RenderLoop::new(browser, rx, loaded);
-    for _ in 0..10 {
-        let frame = render_loop.render()?;
-        log::info!(
-            "received frame: {}x{}, {} bytes",
-            frame.width,
-            frame.height,
-            frame.rgba.len()
-        );
-    }
+    let mut client = create_client(
+        &options,
+        gpu,
+        crate::render_loop::on_paint,
+        crate::render_loop::on_accelerated_paint,
+    );
+    let browser = create_browser(&mut client)?;
+    let render_loop = RenderLoop::new(browser);
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(main_server(render_loop))?;
+    Ok(())
+}
+
+pub async fn main_server(render_loop: RenderLoop) -> anyhow::Result<()> {
+    let server = server::MainServer::new(render_loop);
+    let addr = "[::1]:50051".parse().unwrap();
+    tracing::info!("Starting gRPC server on {}", addr);
+    tonic::transport::Server::builder()
+        .add_service(crate::protocol::lib_server_server::LibServerServer::new(
+            server,
+        ))
+        .serve(addr)
+        .await?;
     Ok(())
 }

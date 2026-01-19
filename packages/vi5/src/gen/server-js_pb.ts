@@ -14,7 +14,24 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file server-js.proto.
  */
 export const file_server_js: GenFile = /*@__PURE__*/
-  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzIj4KEkJhdGNoUmVuZGVyUmVxdWVzdBIoCgxyZW5kZXJfaW5mb3MYASADKAsyEi5jb21tb24uUmVuZGVySW5mbyJHChNCYXRjaFJlbmRlclJlc3BvbnNlEjAKEHJlbmRlcl9yZXNwb25zZXMYASADKAsyFi5jb21tb24uUmVuZGVyUmVzcG9uc2ViBnByb3RvMw", [file_common]);
+  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzIh4KBEluZm8SFgoOc2VydmVyX3ZlcnNpb24YASABKAkiPgoSQmF0Y2hSZW5kZXJSZXF1ZXN0EigKDHJlbmRlcl9pbmZvcxgBIAMoCzISLmNvbW1vbi5SZW5kZXJJbmZvIkcKE0JhdGNoUmVuZGVyUmVzcG9uc2USMAoQcmVuZGVyX3Jlc3BvbnNlcxgBIAMoCzIWLmNvbW1vbi5SZW5kZXJSZXNwb25zZWIGcHJvdG8z", [file_common]);
+
+/**
+ * @generated from message serverjs.Info
+ */
+export type Info = Message<"serverjs.Info"> & {
+  /**
+   * @generated from field: string server_version = 1;
+   */
+  serverVersion: string;
+};
+
+/**
+ * Describes the message serverjs.Info.
+ * Use `create(InfoSchema)` to create a new message.
+ */
+export const InfoSchema: GenMessage<Info> = /*@__PURE__*/
+  messageDesc(file_server_js, 0);
 
 /**
  * @generated from message serverjs.BatchRenderRequest
@@ -31,7 +48,7 @@ export type BatchRenderRequest = Message<"serverjs.BatchRenderRequest"> & {
  * Use `create(BatchRenderRequestSchema)` to create a new message.
  */
 export const BatchRenderRequestSchema: GenMessage<BatchRenderRequest> = /*@__PURE__*/
-  messageDesc(file_server_js, 0);
+  messageDesc(file_server_js, 1);
 
 /**
  * @generated from message serverjs.BatchRenderResponse
@@ -48,5 +65,5 @@ export type BatchRenderResponse = Message<"serverjs.BatchRenderResponse"> & {
  * Use `create(BatchRenderResponseSchema)` to create a new message.
  */
 export const BatchRenderResponseSchema: GenMessage<BatchRenderResponse> = /*@__PURE__*/
-  messageDesc(file_server_js, 1);
+  messageDesc(file_server_js, 2);
 

@@ -4,8 +4,8 @@ syntax = "proto3";
 
 package common;
 
-message RenderInfo {
-  int32 nonce = 1;
+message RenderRequest {
+  int32 render_nonce = 1;
   string id = 2;
   FrameInfo frame_info = 3;
   repeated Parameter parameters = 4;
@@ -31,9 +31,36 @@ message Parameter {
   }
 }
 
+message ObjectInfo {
+  string id = 1;
+  string label = 2;
+  repeated ParameterDefinition parameter_definitions = 3;
+}
+
+enum ParameterType {
+  PARAMETER_STRING = 0;
+  PARAMETER_TEXT = 1;
+  PARAMETER_BOOLEAN = 2;
+  PARAMETER_NUMBER = 3;
+  PARAMETER_COLOR = 4;
+}
+
+message ParameterDefinition {
+  string key = 1;
+  ParameterType type = 2;
+  string label = 3;
+  Parameter default_value = 4;
+}
+
 message RenderResponse {
-  string nonce = 1;
+  int32 render_nonce = 1;
   int32 width = 2;
   int32 height = 3;
   bytes image_data = 4;
+}
+
+message BatchRenderRequest { repeated common.RenderRequest render_requests = 1; }
+
+message BatchRenderResponse {
+  repeated common.RenderResponse render_responses = 1;
 }

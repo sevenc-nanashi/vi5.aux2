@@ -1,24 +1,37 @@
 {
   "name": "vi5",
+  "version": "0.0.0",
   "module": "src/index.ts",
   "type": "module",
-  "bin": "./dist/cli.js",
+  "bin": "./dist/cli.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./config": {
+      "types": "./dist/config.d.mts",
+      "import": "./dist/config.mjs"
+    }
+  },
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
     "buf:build": "buf generate"
   },
   "devDependencies": {
-    "@bufbuild/buf": "^1.63.0",
-    "@bufbuild/protoc-gen-es": "^2.10.2",
-    "@types/bun": "latest",
-    "tsdown": "^0.20.0-beta.3"
+    "@types/yargs": "^17.0.35",
+    "publint": "^0.3.16",
+    "unplugin-raw": "^0.6.4"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.10.2",
-    "vite": "^7.3.1"
+    "fast-base64": "^0.1.8",
+    "jiti": "^2.6.1",
+    "vite": "^7.3.1",
+    "yargs": "^18.0.0"
   }
 }
