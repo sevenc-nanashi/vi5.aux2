@@ -6,7 +6,6 @@ mod types;
 
 use std::sync::{Arc, atomic::AtomicBool, mpsc};
 
-use log::info;
 use render_loop::RenderLoop;
 
 use crate::cef_app::{
@@ -16,7 +15,9 @@ use crate::gpu_capture::GpuCapture;
 use crate::handlers::create_client;
 
 fn main() -> anyhow::Result<()> {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .target(env_logger::Target::Stderr)
+        .init();
 
     let _ = cef::api_hash(cef::sys::CEF_API_VERSION_LAST, 0);
 
@@ -24,6 +25,7 @@ fn main() -> anyhow::Result<()> {
     let options = build_render_options();
     let is_browser_process = prepare_process(&args)?;
     if !is_browser_process {
+        log::info!("Initialized as a secondary process, exiting main.");
         return Ok(());
     }
 
@@ -36,13 +38,13 @@ fn main() -> anyhow::Result<()> {
     let gpu = Arc::new(GpuCapture::new()?);
 
     let url = "http://localhost:5173/";
-    info!("create browser for {url}");
+    log::info!("create browser for {url}");
     let mut client = create_client(&options, sent, loaded.clone(), gpu, tx);
     let browser = create_browser(&mut client, url)?;
     let render_loop = RenderLoop::new(browser, rx, loaded);
     for _ in 0..10 {
         let frame = render_loop.render()?;
-        info!(
+        log::info!(
             "received frame: {}x{}, {} bytes",
             frame.width,
             frame.height,
