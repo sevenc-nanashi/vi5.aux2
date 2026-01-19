@@ -340,24 +340,143 @@ impl GpuCapture {
 }
 
 fn align_to(value: u32, alignment: u32) -> u32 {
-    (value + alignment - 1) / alignment * alignment
+    value.div_ceil(alignment) * alignment
 }
 
-fn main() -> anyhow::Result<()> {
-    let _ = cef::api_hash(sys::CEF_API_VERSION_LAST, 0);
+struct ShutdownGuard;
 
-    let args = cef::args::Args::new();
+impl Drop for ShutdownGuard {
+    fn drop(&mut self) {
+        shutdown();
+    }
+}
+
+wrap_load_handler! {
+    struct TestLoadHandler {
+        loaded: Arc<AtomicBool>,
+    }
+
+    impl LoadHandler {
+        fn on_load_end(
+            &self,
+            _browser: Option<&mut Browser>,
+            frame: Option<&mut Frame>,
+            _http_status_code: ::std::os::raw::c_int,
+        ) {
+            if let Some(frame) = frame && frame.is_main() == 1 {
+                self.loaded.store(true, std::sync::atomic::Ordering::Release);
+            }
+        }
+    }
+}
+
+wrap_render_handler! {
+    struct TestRenderHandler {
+        width: i32,
+        height: i32,
+        sent: Arc<AtomicBool>,
+        gpu: Arc<GpuCapture>,
+        sender: mpsc::Sender<RenderMessage>,
+    }
+
+    impl RenderHandler {
+        fn view_rect(&self, _browser: Option<&mut Browser>, rect: Option<&mut Rect>) {
+            if let Some(rect) = rect {
+                rect.x = 0;
+                rect.y = 0;
+                rect.width = self.width;
+                rect.height = self.height;
+            }
+        }
+
+        fn on_paint(
+            &self,
+            _browser: Option<&mut Browser>,
+            type_: PaintElementType,
+            _dirty_rects: Option<&[Rect]>,
+            buffer: *const u8,
+            width: ::std::os::raw::c_int,
+            height: ::std::os::raw::c_int,
+        ) {
+            if type_ != PaintElementType::VIEW {
+                return;
+            }
+            if buffer.is_null() || width <= 0 || height <= 0 {
+                return;
+            }
+            let size = width as usize * height as usize * 4;
+            let src = unsafe { std::slice::from_raw_parts(buffer, size) };
+            let mut rgba = Vec::with_capacity(size);
+            for pixel in src.chunks_exact(4) {
+                rgba.push(pixel[2]);
+                rgba.push(pixel[1]);
+                rgba.push(pixel[0]);
+                rgba.push(pixel[3]);
+            }
+            let _ = self.sender.send(RenderMessage::Software(RenderedFrame {
+                width: width as usize,
+                height: height as usize,
+                rgba,
+            }));
+        }
+
+        fn on_accelerated_paint(
+            &self,
+            _browser: Option<&mut Browser>,
+            type_: PaintElementType,
+            _dirty_rects: Option<&[Rect]>,
+            info: Option<&AcceleratedPaintInfo>,
+        ) {
+            if type_ != PaintElementType::VIEW {
+                return;
+            }
+            if info.is_none() {
+                return;
+            }
+            let info = info.unwrap();
+            match self.gpu.capture(info) {
+                Ok(frame) => {
+                    let _ = self.sender.send(RenderMessage::Accelerated(frame));
+                }
+                Err(err) => {
+                    eprintln!("Failed to read accelerated frame: {err}");
+                }
+            }
+        }
+    }
+}
+
+wrap_client! {
+    struct TestClient {
+        render_handler: RenderHandler,
+        load_handler: LoadHandler,
+    }
+
+    impl Client {
+        fn render_handler(&self) -> Option<RenderHandler> {
+            Some(self.render_handler.clone())
+        }
+
+        fn load_handler(&self) -> Option<LoadHandler> {
+            Some(self.load_handler.clone())
+        }
+    }
+}
+
+fn build_render_options() -> RenderOptions {
+    RenderOptions {
+        width: 2048,
+        height: 2048,
+        timeout: Duration::from_secs(10),
+    }
+}
+
+fn prepare_process(args: &cef::args::Args) -> anyhow::Result<bool> {
     let cmd = args.as_cmd_line().unwrap();
     cmd.append_switch(Some(&CefString::from(
         "disable-background-timer-throttling",
     )));
     cmd.append_switch(Some(&CefString::from("disable-renderer-backgrounding")));
-
-    let options = RenderOptions {
-        width: 1024,
-        height: 1024,
-        timeout: Duration::from_secs(10),
-    };
 
     let switch = CefString::from("type");
     let is_browser_process = cmd.has_switch(Some(&switch)) != 1;
@@ -378,171 +497,70 @@ fn main() -> anyhow::Result<()> {
         );
         assert!(exit_code >= 0, "cannot execute non-browser process");
         // non-browser process does not initialize cef
-        return Ok(());
+        return Ok(false);
     }
 
-    let mut settings = Settings::default();
-    settings.no_sandbox = 1;
-    settings.windowless_rendering_enabled = 1;
-    settings.external_message_pump = 1;
-    if let Ok(exe_path) = std::env::current_exe() {
-        if let Some(exe_str) = exe_path.to_str() {
-            settings.browser_subprocess_path = CefString::from(exe_str);
-        }
-    }
+    Ok(true)
+}
 
+fn build_settings() -> Settings {
+    // let mut settings = Settings::default();
+    // settings.no_sandbox = 1;
+    // settings.windowless_rendering_enabled = 1;
+    // settings.external_message_pump = 1;
+    let mut settings = Settings {
+        no_sandbox: 1,
+        windowless_rendering_enabled: 1,
+        external_message_pump: 1,
+        ..Default::default()
+    };
+    if let Some(exe_path) = std::env::current_exe()
+        .ok()
+        .map(|p| p.to_string_lossy().to_string())
+    {
+        settings.browser_subprocess_path = CefString::from(exe_path.as_str());
+    }
+    settings
+}
+
+fn initialize_cef(args: &cef::args::Args, settings: &Settings) -> anyhow::Result<ShutdownGuard> {
     let initialized = initialize(
-        Some(&args.as_main_args()),
-        Some(&settings),
+        Some(args.as_main_args()),
+        Some(settings),
         None,
         std::ptr::null_mut(),
     );
     if initialized == 0 {
         anyhow::bail!(RenderError::InitializeFailed);
     }
+    Ok(ShutdownGuard)
+}
 
-    struct ShutdownGuard;
-    impl Drop for ShutdownGuard {
-        fn drop(&mut self) {
-            shutdown();
-        }
-    }
-    let _shutdown_guard = ShutdownGuard;
+fn create_client(
+    options: &RenderOptions,
+    sent: Arc<AtomicBool>,
+    loaded: Arc<AtomicBool>,
+    gpu: Arc<GpuCapture>,
+    sender: mpsc::Sender<RenderMessage>,
+) -> Client {
+    let render_handler = TestRenderHandler::new(options.width, options.height, sent, gpu, sender);
+    let load_handler = TestLoadHandler::new(loaded);
+    TestClient::new(render_handler, load_handler)
+}
 
-    let (tx, rx) = mpsc::channel();
-    let sent = Arc::new(AtomicBool::new(false));
-    let gpu = Arc::new(GpuCapture::new()?);
-
-    wrap_load_handler! {
-        struct TestLoadHandler {
-        }
-
-        impl LoadHandler {
-            fn on_load_end(
-                &self,
-                _browser: Option<&mut Browser>,
-                frame: Option<&mut Frame>,
-                _http_status_code: ::std::os::raw::c_int,
-            ) {
-            }
-        }
-    }
-
-    wrap_render_handler! {
-        struct TestRenderHandler {
-            width: i32,
-            height: i32,
-            sent: Arc<AtomicBool>,
-            gpu: Arc<GpuCapture>,
-            sender: mpsc::Sender<RenderMessage>,
-        }
-
-        impl RenderHandler {
-            fn view_rect(&self, _browser: Option<&mut Browser>, rect: Option<&mut Rect>) {
-                if let Some(rect) = rect {
-                    rect.x = 0;
-                    rect.y = 0;
-                    rect.width = self.width;
-                    rect.height = self.height;
-                }
-            }
-
-            fn on_paint(
-                &self,
-                _browser: Option<&mut Browser>,
-                type_: PaintElementType,
-                _dirty_rects: Option<&[Rect]>,
-                buffer: *const u8,
-                width: ::std::os::raw::c_int,
-                height: ::std::os::raw::c_int,
-            ) {
-                println!("on_paint called: type={:?}, size={}x{}", type_, width, height);
-                if type_ != PaintElementType::VIEW {
-                    return;
-                }
-                if buffer.is_null() || width <= 0 || height <= 0 {
-                    return;
-                }
-                let size = width as usize * height as usize * 4;
-                let src = unsafe { std::slice::from_raw_parts(buffer, size) };
-                let mut rgba = Vec::with_capacity(size);
-                for pixel in src.chunks_exact(4) {
-                    rgba.push(pixel[2]);
-                    rgba.push(pixel[1]);
-                    rgba.push(pixel[0]);
-                    rgba.push(pixel[3]);
-                }
-                let _ = self.sender.send(RenderMessage::Software(RenderedFrame {
-                    width: width as usize,
-                    height: height as usize,
-                    rgba,
-                }));
-            }
-
-            // fn on_accelerated_paint(
-            //     &self,
-            //     _browser: Option<&mut Browser>,
-            //     type_: PaintElementType,
-            //     _dirty_rects: Option<&[Rect]>,
-            //     info: Option<&AcceleratedPaintInfo>,
-            // ) {
-            //     if type_ != PaintElementType::VIEW {
-            //         return;
-            //     }
-            //     if info.is_none() {
-            //         return;
-            //     }
-            //     let info = info.unwrap();
-            //     match self.gpu.capture(info) {
-            //         Ok(frame) => {
-            //             let _ = self.sender.send(RenderMessage::Accelerated(frame));
-            //         }
-            //         Err(err) => {
-            //             eprintln!("Failed to read accelerated frame: {err}");
-            //         }
-            //     }
-            // }
-        }
-    }
-
-    wrap_client! {
-        struct TestClient {
-            render_handler: RenderHandler,
-            load_handler: LoadHandler,
-        }
-
-        impl Client {
-            fn render_handler(&self) -> Option<RenderHandler> {
-                Some(self.render_handler.clone())
-            }
-
-            fn load_handler(&self) -> Option<LoadHandler> {
-                Some(self.load_handler.clone())
-            }
-        }
-    }
-
-    let render_handler =
-        TestRenderHandler::new(options.width, options.height, sent.clone(), gpu, tx);
-    let load_handler = TestLoadHandler::new();
-    let mut client = TestClient::new(render_handler, load_handler);
-
+fn create_browser(client: &mut Client, url: &str) -> Result<Browser, RenderError> {
     let parent: WindowHandle = HWND::default();
     let mut window_info = WindowInfo::default().set_as_windowless(parent);
-    window_info.shared_texture_enabled = 0;
-    // let mut browser_settings = BrowserSettings::default();
-    // browser_settings.windowless_frame_rate = 60;
-    // browser_settings.background_color = 0xFFFFFFFF;
+    window_info.shared_texture_enabled = 1;
     let browser_settings = BrowserSettings {
         windowless_frame_rate: 60,
         background_color: 0x00000000,
         ..Default::default()
     };
 
-    let url = "http://localhost:5173/";
     let browser = browser_host_create_browser_sync(
         Some(&window_info),
-        Some(&mut client),
+        Some(client),
         Some(&CefString::from(url)),
         Some(&browser_settings),
         None,
@@ -562,56 +580,126 @@ fn main() -> anyhow::Result<()> {
         frame.load_url(Some(&CefString::from(url)));
     }
 
-    let mut first_frame = Instant::now();
+    Ok(browser)
+}
+
+fn run_render_loop(
+    browser: &Browser,
+    receiver: &mpsc::Receiver<RenderMessage>,
+    loaded: &Arc<AtomicBool>,
+) {
     let mut num_rendered = 0;
-    let mut accelerated_frames = 0;
-    let mut last_frame: Option<RenderedFrame> = None;
-    loop {
-        browser
-            .host()
+    let mut last_frame: Option<RenderedFrame>;
+    let mut frame_durations = vec![];
+    'outer: loop {
+        if !loaded.load(std::sync::atomic::Ordering::Acquire) {
+            do_message_loop_work();
+            continue 'outer;
+        }
+        let start_time = Instant::now();
+        let nonce = rand::random::<u32>();
+        let js = format!(
+            r#"
+            window.drawFrame({nonce});
+            "#,
+        );
+        println!(
+            "Executing JS to request frame with nonce {}: {}",
+            nonce, &js
+        );
+        println!("Requesting frame with nonce {}", nonce);
+        browser.main_frame().unwrap().execute_java_script(
+            Some(&CefString::from(js.as_str())),
+            None,
+            1,
+        );
+        'inner: loop {
+            // browser
+            //     .host()
+            //     .unwrap()
+            //     .invalidate(cef::PaintElementType::VIEW);
+            do_message_loop_work();
+            if let Ok(message) = receiver.try_recv() {
+                let frame = match message {
+                    RenderMessage::Software(frame) => {
+                        println!("Received software frame");
+                        frame
+                    }
+                    RenderMessage::Accelerated(frame) => {
+                        println!("Received accelerated frame");
+                        frame
+                    }
+                };
+                let frame_nonce = u32::from_le_bytes([
+                    frame.rgba[0],
+                    frame.rgba[1],
+                    frame.rgba[2],
+                    frame.rgba[4],
+                ]);
+                println!("Frame nonce: {}, expected nonce: {}", frame_nonce, nonce);
+                if frame_nonce != nonce {
+                    continue 'inner;
+                }
+                last_frame = Some(frame);
+                break 'inner;
+            }
+        }
+        println!("Accelerated frame received");
+        num_rendered += 1;
+        let rgbs = &last_frame
+            .as_ref()
             .unwrap()
-            .invalidate(cef::PaintElementType::VIEW);
-        do_message_loop_work();
-        if let Ok(message) = rx.try_recv() {
-            match message {
-                RenderMessage::Software(frame) => {
-                    if last_frame.is_none() {
-                        first_frame = Instant::now();
-                    }
-                    last_frame = Some(frame);
-                    println!("Software frame received");
-                    num_rendered += 1;
-                }
-                RenderMessage::Accelerated(frame) => {
-                    if last_frame.is_none() {
-                        first_frame = Instant::now();
-                    }
-                    last_frame = Some(frame);
-                    accelerated_frames += 1;
-                    println!("Accelerated frame received");
-                    num_rendered += 1;
-                }
-            }
-            if num_rendered >= 100 {
-                break;
-            }
+            .rgba
+            .chunks_exact(4)
+            .flat_map(|px| [px[0], px[1], px[2]])
+            .collect::<Vec<_>>();
+        let message_length_pixel = &rgbs[4..8];
+        println!("Message length pixel bytes: {:?}", message_length_pixel);
+        let message_length = u32::from_le_bytes([
+            message_length_pixel[0],
+            message_length_pixel[1],
+            message_length_pixel[2],
+            message_length_pixel[3],
+        ]) as usize;
+        println!("Message length: {}", message_length);
+        let message_bytes = &rgbs[8..8 + message_length];
+        let message = String::from_utf8_lossy(message_bytes);
+        println!("Message from rendered page: {}", message);
+        frame_durations.push(start_time.elapsed());
+        if num_rendered >= 10 {
+            break 'outer;
         }
     }
 
-    let after = Instant::now();
-    let duration = after.duration_since(first_frame);
-    if let Some(frame) = last_frame.as_ref() {
-        image::RgbaImage::from_raw(frame.width as u32, frame.height as u32, frame.rgba.clone())
-            .unwrap()
-            .save("output.png")?;
-    }
-    println!("Rendered {} frames in {:?}", num_rendered, duration);
-    if accelerated_frames > 0 {
-        println!("Accelerated frames: {}", accelerated_frames);
-    }
+    let duration: Duration = frame_durations.iter().sum();
+    println!("Total frames rendered: {}", num_rendered);
     println!(
         "Average frame time: {:?}",
-        duration.checked_div(num_rendered).unwrap_or_default()
+        duration / (frame_durations.len() as u32)
     );
+}
+
+fn main() -> anyhow::Result<()> {
+    let _ = cef::api_hash(sys::CEF_API_VERSION_LAST, 0);
+
+    let args = cef::args::Args::new();
+    let options = build_render_options();
+    let is_browser_process = prepare_process(&args)?;
+    if !is_browser_process {
+        return Ok(());
+    }
+
+    let settings = build_settings();
+    let _shutdown_guard = initialize_cef(&args, &settings)?;
+
+    let (tx, rx) = mpsc::channel();
+    let sent = Arc::new(AtomicBool::new(false));
+    let loaded = Arc::new(AtomicBool::new(false));
+    let gpu = Arc::new(GpuCapture::new()?);
+
+    let url = "http://localhost:5173/";
+    let mut client = create_client(&options, sent, loaded.clone(), gpu, tx);
+    let browser = create_browser(&mut client, url)?;
+    run_render_loop(&browser, &rx, &loaded);
     Ok(())
 }
