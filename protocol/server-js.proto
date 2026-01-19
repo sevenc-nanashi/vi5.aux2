@@ -1,0 +1,14 @@
+// vi5-cef-server to vi5.js
+
+syntax = "proto3";
+package serverjs;
+
+import "common.proto";
+
+message BatchRenderRequest {
+  repeated common.RenderInfo render_infos = 1;
+}
+
+message BatchRenderResponse {
+  repeated common.RenderResponse render_responses = 1;
+}

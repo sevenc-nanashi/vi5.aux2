@@ -1,0 +1,39 @@
+// common
+
+syntax = "proto3";
+
+package common;
+
+message RenderInfo {
+  int32 nonce = 1;
+  string id = 2;
+  FrameInfo frame_info = 3;
+  repeated Parameter parameters = 4;
+}
+
+message FrameInfo {
+  int32 x = 1;
+  int32 y = 2;
+  int32 width = 3;
+  int32 height = 4;
+  int32 current_frame = 5;
+  int32 total_frames = 6;
+}
+
+message Parameter {
+  string key = 1;
+  oneof value {
+    string str_value = 2;
+    string text_value = 3;
+    bool bool_value = 4;
+    double number_value = 5;
+    int32 color_value = 6;
+  }
+}
+
+message RenderResponse {
+  string nonce = 1;
+  int32 width = 2;
+  int32 height = 3;
+  bytes image_data = 4;
+}

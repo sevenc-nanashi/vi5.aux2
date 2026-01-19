@@ -1,0 +1,24 @@
+{
+  "name": "vi5",
+  "module": "src/index.ts",
+  "type": "module",
+  "bin": "./dist/cli.js",
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "buf:build": "buf generate"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.63.0",
+    "@bufbuild/protoc-gen-es": "^2.10.2",
+    "@types/bun": "latest",
+    "tsdown": "^0.20.0-beta.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.10.2",
+    "vite": "^7.3.1"
+  }
+}

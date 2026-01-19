@@ -1,15 +1,4 @@
 {
-  "name": "vi5",
-  "module": "src/index.ts",
-  "type": "module",
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "workspaces": [
-    ".",
-    "./examples/*"
-  ]
+  "name": "vi5-root",
+  "packageManager": "pnpm@10.28.0"
 }
