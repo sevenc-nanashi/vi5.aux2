@@ -29,20 +29,6 @@ pub fn on_accelerated_paint(
 ) {
     if buffer[3] != 255 {
         tracing::warn!("Unexpected alpha value: {}", buffer[3]);
-
-        // debug
-        image::RgbaImage::from_raw(
-            width as u32,
-            height as u32,
-            buffer
-                .to_vec()
-                .chunks_exact(4)
-                .flat_map(|px| vec![px[2], px[1], px[0], px[3]])
-                .collect(),
-        )
-        .unwrap()
-        .save(format!("debug_alpha_{}.png", buffer[3]))
-        .unwrap();
         return;
     }
     let buffer = buffer.as_ref();
