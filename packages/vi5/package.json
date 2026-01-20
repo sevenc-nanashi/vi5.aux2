@@ -9,6 +9,10 @@
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
+    "./client": {
+      "types": "./dist/client.d.mts",
+      "import": "./dist/client.mjs"
+    },
     "./config": {
       "types": "./dist/config.d.mts",
       "import": "./dist/config.mjs"
@@ -21,6 +25,7 @@
   },
   "devDependencies": {
     "@sevenc-nanashi/async-channel": "jsr:^0.2.1",
+    "@types/picomatch": "^4.0.2",
     "@types/yargs": "^17.0.35",
     "publint": "^0.3.16",
     "unplugin-raw": "^0.6.4"
@@ -34,6 +39,7 @@
     "fast-base64": "^0.1.8",
     "jiti": "^2.6.1",
     "p5": "^2.2.0",
+    "picomatch": "^4.0.3",
     "vite": "^7.3.1",
     "yargs": "^18.0.0"
   }

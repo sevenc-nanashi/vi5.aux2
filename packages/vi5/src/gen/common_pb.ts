@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file common.proto.
  */
 export const file_common: GenFile = /*@__PURE__*/
-  fileDesc("Cgxjb21tb24ucHJvdG8SBmNvbW1vbiJ/Cg1SZW5kZXJSZXF1ZXN0EhQKDHJlbmRlcl9ub25jZRgBIAEoBRIKCgJpZBgCIAEoCRIlCgpmcmFtZV9pbmZvGAMgASgLMhEuY29tbW9uLkZyYW1lSW5mbxIlCgpwYXJhbWV0ZXJzGAQgAygLMhEuY29tbW9uLlBhcmFtZXRlciJtCglGcmFtZUluZm8SCQoBeBgBIAEoBRIJCgF5GAIgASgFEg0KBXdpZHRoGAMgASgFEg4KBmhlaWdodBgEIAEoBRIVCg1jdXJyZW50X2ZyYW1lGAUgASgFEhQKDHRvdGFsX2ZyYW1lcxgGIAEoBSKRAQoJUGFyYW1ldGVyEgsKA2tleRgBIAEoCRITCglzdHJfdmFsdWUYAiABKAlIABIUCgp0ZXh0X3ZhbHVlGAMgASgJSAASFAoKYm9vbF92YWx1ZRgEIAEoCEgAEhYKDG51bWJlcl92YWx1ZRgFIAEoAUgAEhUKC2NvbG9yX3ZhbHVlGAYgASgFSABCBwoFdmFsdWUiYwoKT2JqZWN0SW5mbxIKCgJpZBgBIAEoCRINCgVsYWJlbBgCIAEoCRI6ChVwYXJhbWV0ZXJfZGVmaW5pdGlvbnMYAyADKAsyGy5jb21tb24uUGFyYW1ldGVyRGVmaW5pdGlvbiKAAQoTUGFyYW1ldGVyRGVmaW5pdGlvbhILCgNrZXkYASABKAkSIwoEdHlwZRgCIAEoDjIVLmNvbW1vbi5QYXJhbWV0ZXJUeXBlEg0KBWxhYmVsGAMgASgJEigKDWRlZmF1bHRfdmFsdWUYBCABKAsyES5jb21tb24uUGFyYW1ldGVyIkQKEkJhdGNoUmVuZGVyUmVxdWVzdBIuCg9yZW5kZXJfcmVxdWVzdHMYASADKAsyFS5jb21tb24uUmVuZGVyUmVxdWVzdCp7Cg1QYXJhbWV0ZXJUeXBlEhQKEFBBUkFNRVRFUl9TVFJJTkcQABISCg5QQVJBTUVURVJfVEVYVBABEhUKEVBBUkFNRVRFUl9CT09MRUFOEAISFAoQUEFSQU1FVEVSX05VTUJFUhADEhMKD1BBUkFNRVRFUl9DT0xPUhAEYgZwcm90bzM");
+  fileDesc("Cgxjb21tb24ucHJvdG8SBmNvbW1vbiKWAQoNUmVuZGVyUmVxdWVzdBIUCgxyZW5kZXJfbm9uY2UYASABKAUSDgoGb2JqZWN0GAIgASgJEhEKCW9iamVjdF9pZBgDIAEoAxIlCgpmcmFtZV9pbmZvGAQgASgLMhEuY29tbW9uLkZyYW1lSW5mbxIlCgpwYXJhbWV0ZXJzGAUgAygLMhEuY29tbW9uLlBhcmFtZXRlciJtCglGcmFtZUluZm8SCQoBeBgBIAEoBRIJCgF5GAIgASgFEg0KBXdpZHRoGAMgASgFEg4KBmhlaWdodBgEIAEoBRIVCg1jdXJyZW50X2ZyYW1lGAUgASgFEhQKDHRvdGFsX2ZyYW1lcxgGIAEoBSKgAQoJUGFyYW1ldGVyEgsKA2tleRgBIAEoCRITCglzdHJfdmFsdWUYAiABKAlIABIUCgp0ZXh0X3ZhbHVlGAMgASgJSAASFgoMbnVtYmVyX3ZhbHVlGAQgASgBSAASFAoKYm9vbF92YWx1ZRgFIAEoCEgAEiQKC2NvbG9yX3ZhbHVlGAYgASgLMg0uY29tbW9uLkNvbG9ySABCBwoFdmFsdWUiMwoFQ29sb3ISCQoBchgBIAEoARIJCgFnGAIgASgBEgkKAWIYAyABKAESCQoBYRgEIAEoASJjCgpPYmplY3RJbmZvEgoKAmlkGAEgASgJEg0KBWxhYmVsGAIgASgJEjoKFXBhcmFtZXRlcl9kZWZpbml0aW9ucxgDIAMoCzIbLmNvbW1vbi5QYXJhbWV0ZXJEZWZpbml0aW9uIoABChNQYXJhbWV0ZXJEZWZpbml0aW9uEgsKA2tleRgBIAEoCRIjCgR0eXBlGAIgASgOMhUuY29tbW9uLlBhcmFtZXRlclR5cGUSDQoFbGFiZWwYAyABKAkSKAoNZGVmYXVsdF92YWx1ZRgEIAEoCzIRLmNvbW1vbi5QYXJhbWV0ZXIiRAoSQmF0Y2hSZW5kZXJSZXF1ZXN0Ei4KD3JlbmRlcl9yZXF1ZXN0cxgBIAMoCzIVLmNvbW1vbi5SZW5kZXJSZXF1ZXN0KnsKDVBhcmFtZXRlclR5cGUSFAoQUEFSQU1FVEVSX1NUUklORxAAEhIKDlBBUkFNRVRFUl9URVhUEAESFQoRUEFSQU1FVEVSX0JPT0xFQU4QAhIUChBQQVJBTUVURVJfTlVNQkVSEAMSEwoPUEFSQU1FVEVSX0NPTE9SEARiBnByb3RvMw");
 
 /**
  * @generated from message common.RenderRequest
@@ -24,17 +24,22 @@ export type RenderRequest = Message<"common.RenderRequest"> & {
   renderNonce: number;
 
   /**
-   * @generated from field: string id = 2;
+   * @generated from field: string object = 2;
    */
-  id: string;
+  object: string;
 
   /**
-   * @generated from field: common.FrameInfo frame_info = 3;
+   * @generated from field: int64 object_id = 3;
+   */
+  objectId: bigint;
+
+  /**
+   * @generated from field: common.FrameInfo frame_info = 4;
    */
   frameInfo?: FrameInfo;
 
   /**
-   * @generated from field: repeated common.Parameter parameters = 4;
+   * @generated from field: repeated common.Parameter parameters = 5;
    */
   parameters: Parameter[];
 };
@@ -114,21 +119,21 @@ export type Parameter = Message<"common.Parameter"> & {
     case: "textValue";
   } | {
     /**
-     * @generated from field: bool bool_value = 4;
-     */
-    value: boolean;
-    case: "boolValue";
-  } | {
-    /**
-     * @generated from field: double number_value = 5;
+     * @generated from field: double number_value = 4;
      */
     value: number;
     case: "numberValue";
   } | {
     /**
-     * @generated from field: int32 color_value = 6;
+     * @generated from field: bool bool_value = 5;
      */
-    value: number;
+    value: boolean;
+    case: "boolValue";
+  } | {
+    /**
+     * @generated from field: common.Color color_value = 6;
+     */
+    value: Color;
     case: "colorValue";
   } | { case: undefined; value?: undefined };
 };
@@ -139,6 +144,38 @@ export type Parameter = Message<"common.Parameter"> & {
  */
 export const ParameterSchema: GenMessage<Parameter> = /*@__PURE__*/
   messageDesc(file_common, 2);
+
+/**
+ * @generated from message common.Color
+ */
+export type Color = Message<"common.Color"> & {
+  /**
+   * @generated from field: double r = 1;
+   */
+  r: number;
+
+  /**
+   * @generated from field: double g = 2;
+   */
+  g: number;
+
+  /**
+   * @generated from field: double b = 3;
+   */
+  b: number;
+
+  /**
+   * @generated from field: double a = 4;
+   */
+  a: number;
+};
+
+/**
+ * Describes the message common.Color.
+ * Use `create(ColorSchema)` to create a new message.
+ */
+export const ColorSchema: GenMessage<Color> = /*@__PURE__*/
+  messageDesc(file_common, 3);
 
 /**
  * @generated from message common.ObjectInfo
@@ -165,7 +202,7 @@ export type ObjectInfo = Message<"common.ObjectInfo"> & {
  * Use `create(ObjectInfoSchema)` to create a new message.
  */
 export const ObjectInfoSchema: GenMessage<ObjectInfo> = /*@__PURE__*/
-  messageDesc(file_common, 3);
+  messageDesc(file_common, 4);
 
 /**
  * @generated from message common.ParameterDefinition
@@ -197,7 +234,7 @@ export type ParameterDefinition = Message<"common.ParameterDefinition"> & {
  * Use `create(ParameterDefinitionSchema)` to create a new message.
  */
 export const ParameterDefinitionSchema: GenMessage<ParameterDefinition> = /*@__PURE__*/
-  messageDesc(file_common, 4);
+  messageDesc(file_common, 5);
 
 /**
  * @generated from message common.BatchRenderRequest
@@ -214,7 +251,7 @@ export type BatchRenderRequest = Message<"common.BatchRenderRequest"> & {
  * Use `create(BatchRenderRequestSchema)` to create a new message.
  */
 export const BatchRenderRequestSchema: GenMessage<BatchRenderRequest> = /*@__PURE__*/
-  messageDesc(file_common, 5);
+  messageDesc(file_common, 6);
 
 /**
  * @generated from enum common.ParameterType

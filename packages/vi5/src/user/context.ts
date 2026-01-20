@@ -1,12 +1,24 @@
-import type p5 from "p5";
+import p5 from "p5";
+p5.disableFriendlyErrors = true;
 
 export class Vi5Context {
-  readonly p: p5;
+  #p5Instance: p5 | null = null;
   #mainCanvas: p5.Renderer | null = null;
   #graphics: p5.Graphics[] = [];
 
-  constructor(p5Instance: p5) {
-    this.p = p5Instance;
+  constructor() {
+    this.#p5Instance = null;
+  }
+
+  initialize(p5Instance: p5) {
+    this.#p5Instance = p5Instance;
+  }
+
+  get p(): p5 {
+    if (!this.#p5Instance) {
+      throw new Error("p5 instance has not been initialized yet.");
+    }
+    return this.#p5Instance;
   }
 
   createCanvas(
@@ -25,6 +37,13 @@ export class Vi5Context {
     const newGraphics = this.p.createGraphics(width, height, renderer);
     this.#graphics.push(newGraphics);
     return newGraphics;
+  }
+
+  get mainCanvas() {
+    if (!this.#mainCanvas) {
+      throw new Error("Main canvas has not been created yet.");
+    }
+    return this.#mainCanvas;
   }
 
   teardown() {

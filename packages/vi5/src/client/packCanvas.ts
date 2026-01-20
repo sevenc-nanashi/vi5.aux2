@@ -8,7 +8,7 @@ import {
 } from "../gen/server-js_pb";
 import { Vi5Runtime } from "./runtime";
 
-type JsRenderResponse =
+export type JsRenderResponse =
   | {
       type: "success";
       canvas: HTMLCanvasElement;
@@ -60,7 +60,7 @@ const getMetadataRows = (renderResponses: SingleRenderResponse[]): number => {
     MaybeIncompleteRenderResponseSchema,
     protobuf.create(MaybeIncompleteRenderResponseSchema, {
       renderResponses,
-      isIncomplete: false,
+      isIncomplete: true,
     }),
   );
   const payloadLength = payload.length + messageHeaderBytes;
@@ -92,11 +92,13 @@ const packBatch = (
   let y = metadataRows;
   let rowHeight = 0;
   let index = startIndex;
-  for (const response of responses) {
+  while (index < responses.length) {
+    const response = responses[index]!;
     if (response.type === "error") {
       renderResponses.push(
         buildErrorResponse(response.renderNonce, response.error),
       );
+      index += 1;
       continue;
     }
 
@@ -141,8 +143,8 @@ const packBatch = (
       x,
       y,
     });
-
     x += width;
+    index += 1;
     rowHeight = Math.max(rowHeight, height);
   }
 
@@ -173,7 +175,15 @@ export function packCanvases(
     }
 
     startIndex = result.nextIndex;
+    batches.push(
+      protobuf.create(MaybeIncompleteRenderResponseSchema, {
+        renderResponses: result.renderResponses,
+        isIncomplete: true,
+      }),
+    );
   }
+
+  batches[batches.length - 1]!.isIncomplete = false;
 
   return batches;
 }

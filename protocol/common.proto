@@ -6,9 +6,10 @@ package common;
 
 message RenderRequest {
   int32 render_nonce = 1;
-  string id = 2;
-  FrameInfo frame_info = 3;
-  repeated Parameter parameters = 4;
+  string object = 2;
+  int64 object_id = 3;
+  FrameInfo frame_info = 4;
+  repeated Parameter parameters = 5;
 }
 
 message FrameInfo {
@@ -25,10 +26,17 @@ message Parameter {
   oneof value {
     string str_value = 2;
     string text_value = 3;
-    bool bool_value = 4;
-    double number_value = 5;
-    int32 color_value = 6;
+    double number_value = 4;
+    bool bool_value = 5;
+    Color color_value = 6;
   }
+}
+
+message Color {
+  double r = 1;
+  double g = 2;
+  double b = 3;
+  double a = 4;
 }
 
 message ObjectInfo {

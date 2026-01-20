@@ -2,7 +2,8 @@ import { defineObject } from "vi5";
 import p5 from "p5";
 
 export default defineObject({
-  name: "test-object",
+  id: "test-object",
+  label: "Test Object",
   parameters: {},
   setup(ctx, params) {
     return ctx.createCanvas(200, 200, p5.P2D);

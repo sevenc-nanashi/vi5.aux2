@@ -19,6 +19,10 @@ pub fn prepare_process(args: &cef::args::Args) -> anyhow::Result<bool> {
         "disable-background-timer-throttling",
     )));
     cmd.append_switch(Some(&CefString::from("disable-renderer-backgrounding")));
+    cmd.append_switch_with_value(
+        Some(&CefString::from("remote-debugging-port")),
+        Some(&CefString::from("9222")),
+    );
 
     let switch = CefString::from("type");
     let is_browser_process = cmd.has_switch(Some(&switch)) != 1;
@@ -48,6 +52,7 @@ pub fn build_settings() -> Settings {
         no_sandbox: 1,
         windowless_rendering_enabled: 1,
         external_message_pump: 1,
+
         ..Default::default()
     };
     if let Some(exe_path) = std::env::current_exe()

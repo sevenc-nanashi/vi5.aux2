@@ -21,6 +21,7 @@ dashmap = "6.1.0"
 base64 = "0.22.1"
 tonic-reflection = "0.14.2"
 color-backtrace = "0.7.2"
+futures = "0.3.31"
 
 [build-dependencies]
 anyhow = "1.0.100"

@@ -1,14 +1,29 @@
+/// <reference types="vite/client" />
 import * as fastBase64 from "fast-base64";
 import * as protobuf from "@bufbuild/protobuf";
-import { BatchRenderRequestSchema } from "../gen/common_pb";
+import {
+  BatchRenderRequestSchema,
+  type Parameter,
+  type RenderRequest,
+} from "../gen/common_pb";
 
 import { vi5Log } from "./log";
 import {
   InitializeInfoSchema,
   MaybeIncompleteRenderResponseSchema,
-  SingleRenderResponseSchema,
+  type RendereredObjectInfo,
 } from "../gen/server-js_pb";
-import type { Vi5Object } from "..";
+import type {
+  InferParameters,
+  ParameterDefinitions,
+  ParameterType,
+  Vi5Object,
+} from "../user/object";
+import { Vi5Context } from "../user/context";
+import { packCanvases, type JsRenderResponse } from "./packCanvas";
+import p5 from "p5";
+
+const runtimeLog = vi5Log.getChild("Vi5Runtime");
 
 const isMessage = <Desc extends protobuf.DescMessage>(
   data: protobuf.MessageShape<Desc> | protobuf.MessageInitShape<Desc>,
@@ -16,10 +31,86 @@ const isMessage = <Desc extends protobuf.DescMessage>(
   return typeof data === "object" && data !== null && "$typeName" in data;
 };
 
+// const initializePromises: Record<bigint, Promise<void>> = {};
+const initializePromises = new Map<bigint, Promise<void>>();
+const contexts = new Map<bigint, Vi5Context>();
+
+async function maybeInitializeContext<T extends ParameterDefinitions>(
+  objectId: bigint,
+  object: Vi5Object<T>,
+  parameter: InferParameters<T>,
+): Promise<Vi5Context | undefined> {
+  if (!initializePromises.has(objectId)) {
+    const initPromise = initializeContext(objectId, object, parameter);
+    initializePromises.set(objectId, initPromise);
+
+    // 一瞬だけ待ってあげる
+    await Promise.race([initPromise, {}]);
+  }
+  if (contexts.has(objectId)) {
+    return contexts.get(objectId);
+  }
+}
+async function initializeContext<T extends ParameterDefinitions>(
+  id: bigint,
+  object: Vi5Object<T>,
+  parameter: InferParameters<T>,
+): Promise<void> {
+  const ctx = new Vi5Context();
+  // TODO: エラー処理
+  const p = new p5((sketch) => {
+    ctx.initialize(sketch);
+    sketch.setup = () => {
+      const setup = object.setup(ctx, parameter);
+      if (setup instanceof Promise) {
+        return setup.then(() => {
+          contexts.set(id, ctx);
+        });
+      } else {
+        contexts.set(id, ctx);
+      }
+    };
+    sketch.noLoop();
+    sketch.setup();
+  });
+}
+function grpcParamsToJsParams<T extends ParameterDefinitions>(
+  grpcParams: Parameter[],
+): InferParameters<T> {
+  const params: Record<string, ParameterType<any>> = {};
+  for (const param of grpcParams) {
+    switch (param.value.case) {
+      case "strValue":
+        params[param.key] = param.value.value;
+        break;
+      case "textValue":
+        params[param.key] = param.value.value;
+        break;
+      case "numberValue":
+        params[param.key] = param.value.value;
+        break;
+      case "boolValue":
+        params[param.key] = param.value.value;
+        break;
+      case "colorValue":
+        params[param.key] = {
+          r: param.value.value.r,
+          g: param.value.value.g,
+          b: param.value.value.b,
+          a: param.value.value.a as 0 | 1,
+        };
+        break;
+      default:
+        runtimeLog.warn`Unknown parameter value case: ${param.value.case satisfies undefined}`;
+    }
+  }
+  return params as InferParameters<T>;
+}
+
 export class Vi5Runtime {
   readonly canvas: HTMLCanvasElement;
   readonly ctx: CanvasRenderingContext2D;
-  readonly objects = new Map<string, Vi5Object<never>>();
+  readonly objects = new Map<string, Vi5Object<ParameterDefinitions>>();
 
   constructor(public readonly root: string) {
     this.canvas = document.getElementById("vi5-canvas") as HTMLCanvasElement;
@@ -35,41 +126,106 @@ export class Vi5Runtime {
       },
       0,
     );
+
+    if (import.meta.hot) {
+      import.meta.hot.on("vi5:on-object-list-changed", (list) => {
+        // TOOD: オブジェクトの追加・削除に対応する
+        runtimeLog.info`Object list changed, reloading page...`;
+        window.location.reload();
+      });
+    }
   }
 
   async render(nonce: number, dataB64: string) {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     const data = await fastBase64.toBytes(dataB64);
     const renderPayload = protobuf.fromBinary(BatchRenderRequestSchema, data);
-    const canvasInfos = [];
-
-    for (const [i, renderRequest] of renderPayload.renderRequests.entries()) {
-      // TODO: do actual rendering based on renderRequest
-      this.ctx.fillStyle = `hsl(${(i * 60) % 360}, 100%, 50%)`;
-      this.ctx.fillRect(i * 10, i * 10 + 10, 10, 10);
-      canvasInfos.push(
-        protobuf.create(SingleRenderResponseSchema, {
-          nonce: renderRequest.renderNonce,
-          response: {
-            case: "rendereredObjectInfo",
-            value: {
-              x: i * 10,
-              y: i * 10 + 10,
-              width: 10,
-              height: 10,
-            },
-          },
-        }),
+    const jsResponses = await Promise.all(
+      renderPayload.renderRequests.map(
+        async (req): Promise<JsRenderResponse> => {
+          try {
+            return await this.doRender(req);
+          } catch (e) {
+            runtimeLog.error`Error during rendering object ${req.object}: ${e}`;
+            return {
+              type: "error",
+              renderNonce: req.renderNonce,
+              error: `Error during rendering: ${e}`,
+            };
+          }
+        },
+      ),
+    );
+    const canvases = new Map<number, HTMLCanvasElement>();
+    for (const resp of jsResponses) {
+      if (resp.type === "success") {
+        canvases.set(resp.renderNonce, resp.canvas);
+      }
+    }
+    const packed = packCanvases(jsResponses);
+    for (const packedResponse of packed) {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      for (const renderResponse of packedResponse.renderResponses) {
+        if (renderResponse.response.case === "rendereredObjectInfo") {
+          const info = renderResponse.response.value as RendereredObjectInfo;
+          this.ctx.drawImage(
+            canvases.get(renderResponse.nonce)!,
+            info.x,
+            info.y,
+            info.width,
+            info.height,
+            info.x,
+            info.y,
+            info.width,
+            info.height,
+          );
+          runtimeLog.debug`Rendered object ${renderResponse.nonce} at (${info.x}, ${info.y}) with size ${info.width}x${info.height}`;
+        }
+      }
+      this.drawMessage(
+        MaybeIncompleteRenderResponseSchema,
+        packedResponse,
+        nonce,
       );
     }
-    this.drawMessage(
-      MaybeIncompleteRenderResponseSchema,
-      {
-        renderResponses: canvasInfos,
-        isIncomplete: false,
-      },
-      nonce,
-    );
+    // this.drawMessage(
+    //   MaybeIncompleteRenderResponseSchema,
+    //   {
+    //     renderResponses: renderResponses,
+    //     isIncomplete: false,
+    //   },
+    //   nonce,
+    // );
+  }
+
+  private async doRender(request: RenderRequest): Promise<JsRenderResponse> {
+    const object = this.objects.get(request.object);
+    if (!object) {
+      runtimeLog.warn`Object not found: ${request.object}`;
+      return {
+        type: "error",
+        renderNonce: request.renderNonce,
+        error: `Object not found: ${request.object}`,
+      };
+    }
+
+    const params = grpcParamsToJsParams(request.parameters);
+    const ctx = await maybeInitializeContext(request.objectId, object, params);
+    if (!ctx) {
+      runtimeLog.info`Object not initialized yet: ${request.object}`;
+      return {
+        type: "error",
+        renderNonce: request.renderNonce,
+        error: `Object not initialized yet: ${request.object}`,
+      };
+    }
+    object.draw(ctx, params);
+    const p5Canvas = ctx.mainCanvas;
+    return {
+      type: "success",
+      renderNonce: request.renderNonce,
+      canvas: p5Canvas.elt,
+    };
   }
 
   drawMessage<Desc extends protobuf.DescMessage>(
@@ -93,7 +249,7 @@ export class Vi5Runtime {
       (binaryLength >> 24) & 0xff,
       ...message,
     ];
-    vi5Log.debug`Sending message with nonce ${nonce} and length ${binaryLength}`;
+    runtimeLog.debug`Sending message with nonce ${nonce} and length ${binaryLength}`;
 
     for (let i = 0; i < payload.length; i += 3) {
       const chunk = payload.slice(i, i + 3);
@@ -109,10 +265,12 @@ export class Vi5Runtime {
     return window.__vi5__;
   }
 
-  register<T extends Vi5Object<never>>(url: string, object: T) {
-    this.objects.set(url, object);
+  register<T extends Vi5Object<ParameterDefinitions>>(object: T) {
+    runtimeLog.info`Registering object: ${object.id} (${object.label})`;
+    this.objects.set(object.id, object);
   }
-  unregister(url: string) {
-    this.objects.delete(url);
+  unregister(id: string) {
+    runtimeLog.info`Unregistering object: ${id}`;
+    this.objects.delete(id);
   }
 }

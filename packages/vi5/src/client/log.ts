@@ -7,9 +7,8 @@ export const vi5Log = logtape.getLogger("vi5");
 await logtape.configure({
   sinks: {
     console: logtape.getConsoleSink({
-      formatter: logtape.getAnsiColorFormatter({
+      formatter: logtape.getTextFormatter({
         level: "full",
-        categoryColor: "cyan",
         category: (category: readonly string[]) => `[${category.join("][")}]`,
       }),
     }),
@@ -20,7 +19,7 @@ await logtape.configure({
   loggers: [
     {
       category: [],
-      lowestLevel: "info",
+      lowestLevel: "debug",
       sinks: ["console", "logChannel"],
     },
 

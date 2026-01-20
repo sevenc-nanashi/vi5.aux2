@@ -15,16 +15,16 @@ message InitializeResponse {
 message BatchRenderResponse { repeated RenderResponse render_responses = 1; }
 
 message RenderResponse {
+  int32 render_nonce = 1;
   oneof response {
-    SuccessRenderResponse success = 1;
-    string error_message = 2;
+    SuccessRenderResponse success = 2;
+    string error_message = 3;
   }
 }
 message SuccessRenderResponse {
-  int32 render_nonce = 1;
-  int32 width = 2;
-  int32 height = 3;
-  bytes image_data = 4;
+  int32 width = 1;
+  int32 height = 2;
+  bytes image_data = 3;
 }
 
 service LibServer {

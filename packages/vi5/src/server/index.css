@@ -1,11 +1,11 @@
-#canvas {
+#vi5-canvas {
   position: fixed;
   top: 0;
   left: 0;
   width: 2048px;
   height: 2048px;
 }
-canvas:not(#canvas) {
+canvas:not(#vi5-canvas) {
   display: none;
 }
 

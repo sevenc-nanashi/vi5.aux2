@@ -9,11 +9,44 @@ type PaintCallback = dyn FnMut(&[u8], usize, usize) -> std::ops::ControlFlow<()>
 static PAINT_CALLBACKS: std::sync::LazyLock<dashmap::DashMap<u32, Box<PaintCallback>>> =
     std::sync::LazyLock::new(dashmap::DashMap::new);
 
+fn maybe_temporary_save_buffer(
+    buffer: &[u8],
+    width: usize,
+    height: usize,
+    bytes_per_row: usize,
+    nonce: u32,
+) {
+    if std::env::var("VI5_SAVE_PAINT_BUFFERS").is_ok() {
+        std::fs::create_dir_all("paint_buffer").expect("Failed to create paint_buffer directory");
+        let current_nano = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let filename = format!("paint_buffer/paint_buffer_{current_nano}_nonce_{nonce}.png");
+        let png = image::RgbaImage::from_fn(width as u32, height as u32, |x, y| {
+            let row_start = y as usize * bytes_per_row;
+            let pixel_start = row_start + x as usize * 4;
+            image::Rgba([
+                buffer[pixel_start],
+                buffer[pixel_start + 1],
+                buffer[pixel_start + 2],
+                buffer[pixel_start + 3],
+            ])
+        });
+        png.save(&filename)
+            .expect("Failed to save paint buffer as PNG");
+    }
+}
+
 pub fn on_paint(buffer: &[u8], width: usize, height: usize) {
     if buffer[3] == 0 {
         tracing::warn!("Received empty paint buffer");
         return;
     }
+    tracing::trace!(
+        "First 20 bytes of buffer: {:?}",
+        &buffer[..20.min(buffer.len())]
+    );
     let nonce = u32::from_le_bytes([buffer[0], buffer[1], buffer[2], buffer[4]]);
     if let Some(mut callback) = PAINT_CALLBACKS.get_mut(&nonce) {
         match callback(buffer, width, height) {
@@ -25,6 +58,7 @@ pub fn on_paint(buffer: &[u8], width: usize, height: usize) {
         }
     } else {
         tracing::warn!("No paint callback found for nonce {}", nonce);
+        maybe_temporary_save_buffer(buffer, width, height, width * 4, nonce);
     }
 }
 pub fn on_accelerated_paint(
@@ -37,6 +71,10 @@ pub fn on_accelerated_paint(
         tracing::warn!("Unexpected alpha value: {}", buffer[3]);
         return;
     }
+    tracing::trace!(
+        "First 20 bytes of accelerated buffer: {:?}",
+        &buffer[..20.min(buffer.len())]
+    );
     let buffer = buffer.as_ref();
     let nonce = u32::from_le_bytes([buffer[0], buffer[1], buffer[2], buffer[4]]);
     if let Some(mut callback) = PAINT_CALLBACKS.get_mut(&nonce) {
@@ -56,6 +94,7 @@ pub fn on_accelerated_paint(
         }
     } else {
         tracing::warn!("No paint callback found for nonce {}", nonce);
+        maybe_temporary_save_buffer(buffer, width, height, bytes_per_row, nonce);
     }
 }
 
@@ -73,13 +112,17 @@ impl RenderLoop {
         }
     }
 
-    pub async fn wait_for_initialization(&self) {
-        for _ in 0..10000 {
+    pub async fn wait_for_initialization(&self) -> anyhow::Result<()> {
+        let start_time = std::time::Instant::now();
+        loop {
             if self.initialized.get().is_some() {
-                break;
+                return Ok(());
             }
             cef::do_message_loop_work();
             tokio::time::sleep(Duration::from_millis(10)).await;
+            if start_time.elapsed() > Duration::from_secs(30) {
+                anyhow::bail!("Timeout waiting for initialization");
+            }
         }
     }
 
@@ -98,16 +141,14 @@ impl RenderLoop {
                     ) {
                         Ok(info) => {
                             tracing::info!("Page initialization complete");
-                            initialized.set(Ok(info)).unwrap();
+                            let _ = initialized.set(Ok(info));
                         }
                         Err(e) => {
                             tracing::error!("Failed to decode InitializationComplete: {}", e);
-                            initialized
-                                .set(Err(anyhow::anyhow!(
-                                    "Failed to decode InitializationComplete: {}",
-                                    e
-                                )))
-                                .unwrap();
+                            let _ = initialized.set(Err(anyhow::anyhow!(
+                                "Failed to decode InitializationComplete: {}",
+                                e
+                            )));
                         }
                     }
                     std::ops::ControlFlow::Break(())
@@ -119,7 +160,7 @@ impl RenderLoop {
             .main_frame()
             .unwrap()
             .load_url(Some(&cef::CefString::from(url)));
-        self.wait_for_initialization().await;
+        self.wait_for_initialization().await?;
         match self.initialized.get().unwrap() {
             Ok(info) => Ok(info.clone()),
             Err(e) => Err(anyhow::anyhow!("Initialization failed: {}", e)),
@@ -130,7 +171,7 @@ impl RenderLoop {
         &self,
         request: crate::protocol::common::BatchRenderRequest,
     ) -> anyhow::Result<crate::protocol::libserver::BatchRenderResponse> {
-        self.wait_for_initialization().await;
+        self.wait_for_initialization().await?;
         let nonce = loop {
             let nonce = rand::random::<u32>();
             // 1024までは予約しておく
@@ -155,8 +196,8 @@ impl RenderLoop {
                 }
             };
 
-            for maybe_renderered_object_info in response.render_responses {
-                match maybe_renderered_object_info.response.unwrap() {
+            for single_render_response in response.render_responses {
+                match single_render_response.response.unwrap() {
                     crate::protocol::serverjs::single_render_response::Response::RendereredObjectInfo(
                         renderered_object_info,
                     ) => {
@@ -175,10 +216,10 @@ impl RenderLoop {
 
                         }
                         let _ = tx.send(crate::protocol::libserver::RenderResponse {
+                            render_nonce: single_render_response.nonce,
                             response: Some(
                                 crate::protocol::libserver::render_response::Response::Success(
                                     crate::protocol::libserver::SuccessRenderResponse {
-                                        render_nonce: renderered_object_info.nonce,
                                         width: renderered_object_info.width,
                                         height: renderered_object_info.height,
                                         image_data,
@@ -191,6 +232,7 @@ impl RenderLoop {
                         err,
                     ) => {
                         let _ = tx.send(crate::protocol::libserver::RenderResponse {
+                            render_nonce: single_render_response.nonce,
                             response: Some(
                                 crate::protocol::libserver::render_response::Response::ErrorMessage(
                                     err,
@@ -209,7 +251,7 @@ impl RenderLoop {
         });
         PAINT_CALLBACKS.insert(nonce, callback);
         let request = base64::engine::general_purpose::STANDARD.encode(request.encode_to_vec());
-        let js = format!("window.__vi5_render({nonce}, '{request}');");
+        let js = format!("window.__vi5__.render({nonce}, '{request}');");
         tracing::debug!(
             "Executing JS to request frame with nonce {}: {}",
             nonce,
@@ -225,6 +267,7 @@ impl RenderLoop {
             host.invalidate(cef::PaintElementType::VIEW);
         }
         let mut render_responses = vec![];
+        let current_nano = std::time::Instant::now();
         loop {
             let received = rx.try_recv();
             match received {
@@ -240,6 +283,10 @@ impl RenderLoop {
                     //     host.invalidate(cef::PaintElementType::VIEW);
                     // }
                     cef::do_message_loop_work();
+                    if current_nano.elapsed() > Duration::from_secs(30) {
+                        PAINT_CALLBACKS.remove(&nonce);
+                        anyhow::bail!("Timeout waiting for render responses");
+                    }
                 }
                 Ok(response) => {
                     render_responses.push(response);
