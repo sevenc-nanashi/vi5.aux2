@@ -20,6 +20,7 @@
     "buf:build": "buf generate"
   },
   "devDependencies": {
+    "@sevenc-nanashi/async-channel": "jsr:^0.2.1",
     "@types/yargs": "^17.0.35",
     "publint": "^0.3.16",
     "unplugin-raw": "^0.6.4"
@@ -29,8 +30,10 @@
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.10.2",
+    "@logtape/logtape": "^2.0.0",
     "fast-base64": "^0.1.8",
     "jiti": "^2.6.1",
+    "p5": "^2.2.0",
     "vite": "^7.3.1",
     "yargs": "^18.0.0"
   }

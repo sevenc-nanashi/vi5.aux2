@@ -131,10 +131,16 @@ impl RenderLoop {
         request: crate::protocol::common::BatchRenderRequest,
     ) -> anyhow::Result<crate::protocol::libserver::BatchRenderResponse> {
         self.wait_for_initialization().await;
-        let nonce = rand::random::<u32>();
+        let nonce = loop {
+            let nonce = rand::random::<u32>();
+            // 1024までは予約しておく
+            if !PAINT_CALLBACKS.contains_key(&nonce) && nonce > 1024 {
+                break nonce;
+            }
+        };
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
         let mut maybe_tx = Some(tx);
-        let callback = Box::new(move |buffer: &[u8], width: usize, height: usize| {
+        let callback = Box::new(move |buffer: &[u8], width: usize, _height: usize| {
             let Some(tx) = &maybe_tx else {
                 return std::ops::ControlFlow::Break(());
             };

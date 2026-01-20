@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file server-js.proto.
  */
 export const file_server_js: GenFile = /*@__PURE__*/
-  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzIioKDkluaXRpYWxpemVJbmZvEhgKEHJlbmRlcmVyX3ZlcnNpb24YASABKAkiWgoUUmVuZGVyZXJlZE9iamVjdEluZm8SDQoFbm9uY2UYASABKAUSCQoBeBgCIAEoBRIJCgF5GAMgASgFEg0KBXdpZHRoGAQgASgFEg4KBmhlaWdodBgFIAEoBSJ9ChRTaW5nbGVSZW5kZXJSZXNwb25zZRJAChZyZW5kZXJlcmVkX29iamVjdF9pbmZvGAEgASgLMh4uc2VydmVyanMuUmVuZGVyZXJlZE9iamVjdEluZm9IABIXCg1lcnJvcl9tZXNzYWdlGAIgASgJSABCCgoIcmVzcG9uc2UicAodTWF5YmVJbmNvbXBsZXRlUmVuZGVyUmVzcG9uc2USOAoQcmVuZGVyX3Jlc3BvbnNlcxgBIAMoCzIeLnNlcnZlcmpzLlNpbmdsZVJlbmRlclJlc3BvbnNlEhUKDWlzX2luY29tcGxldGUYAiABKAhiBnByb3RvMw", [file_common]);
+  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzIioKDkluaXRpYWxpemVJbmZvEhgKEHJlbmRlcmVyX3ZlcnNpb24YASABKAkiSwoUUmVuZGVyZXJlZE9iamVjdEluZm8SCQoBeBgBIAEoBRIJCgF5GAIgASgFEg0KBXdpZHRoGAMgASgFEg4KBmhlaWdodBgEIAEoBSKMAQoUU2luZ2xlUmVuZGVyUmVzcG9uc2USDQoFbm9uY2UYASABKAUSQAoWcmVuZGVyZXJlZF9vYmplY3RfaW5mbxgCIAEoCzIeLnNlcnZlcmpzLlJlbmRlcmVyZWRPYmplY3RJbmZvSAASFwoNZXJyb3JfbWVzc2FnZRgDIAEoCUgAQgoKCHJlc3BvbnNlInAKHU1heWJlSW5jb21wbGV0ZVJlbmRlclJlc3BvbnNlEjgKEHJlbmRlcl9yZXNwb25zZXMYASADKAsyHi5zZXJ2ZXJqcy5TaW5nbGVSZW5kZXJSZXNwb25zZRIVCg1pc19pbmNvbXBsZXRlGAIgASgIYgZwcm90bzM", [file_common]);
 
 /**
  * @generated from message serverjs.InitializeInfo
@@ -37,27 +37,22 @@ export const InitializeInfoSchema: GenMessage<InitializeInfo> = /*@__PURE__*/
  */
 export type RendereredObjectInfo = Message<"serverjs.RendereredObjectInfo"> & {
   /**
-   * @generated from field: int32 nonce = 1;
-   */
-  nonce: number;
-
-  /**
-   * @generated from field: int32 x = 2;
+   * @generated from field: int32 x = 1;
    */
   x: number;
 
   /**
-   * @generated from field: int32 y = 3;
+   * @generated from field: int32 y = 2;
    */
   y: number;
 
   /**
-   * @generated from field: int32 width = 4;
+   * @generated from field: int32 width = 3;
    */
   width: number;
 
   /**
-   * @generated from field: int32 height = 5;
+   * @generated from field: int32 height = 4;
    */
   height: number;
 };
@@ -74,17 +69,22 @@ export const RendereredObjectInfoSchema: GenMessage<RendereredObjectInfo> = /*@_
  */
 export type SingleRenderResponse = Message<"serverjs.SingleRenderResponse"> & {
   /**
+   * @generated from field: int32 nonce = 1;
+   */
+  nonce: number;
+
+  /**
    * @generated from oneof serverjs.SingleRenderResponse.response
    */
   response: {
     /**
-     * @generated from field: serverjs.RendereredObjectInfo renderered_object_info = 1;
+     * @generated from field: serverjs.RendereredObjectInfo renderered_object_info = 2;
      */
     value: RendereredObjectInfo;
     case: "rendereredObjectInfo";
   } | {
     /**
-     * @generated from field: string error_message = 2;
+     * @generated from field: string error_message = 3;
      */
     value: string;
     case: "errorMessage";

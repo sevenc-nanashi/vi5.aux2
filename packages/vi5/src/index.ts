@@ -1,3 +1,6 @@
+import type p5 from "p5";
+import type { Vi5Context } from "./user/context";
+
 export const parameterTypes = {
   string: "string",
   text: "text",
@@ -51,13 +54,16 @@ type InferParameters<
   [K in keyof T]: ParameterType<T[K]["type"]>;
 };
 
-type Vi5Object<
+export type Vi5Object<
   T extends Record<string, ParameterDefinition<keyof typeof parameterTypes>>,
 > = {
   name: string;
   parameters: T;
-  setup?: (params: InferParameters<T>) => Promise<void> | void;
-  draw: (params: InferParameters<T>) => void;
+  setup: (
+    ctx: Vi5Context,
+    params: InferParameters<T>,
+  ) => Promise<p5.Renderer> | p5.Renderer;
+  draw: (ctx: Vi5Context, params: InferParameters<T>) => void;
 };
 
 export function defineObject<
@@ -65,4 +71,3 @@ export function defineObject<
 >(option: Vi5Object<T>): Vi5Object<T> {
   return option;
 }
-
