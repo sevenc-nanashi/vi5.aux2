@@ -1,7 +1,7 @@
 --PARAMETER_DEFINITIONS--
 --LABEL--
 --END_HEADER
-local internal = obj.module("vi5_debug")
+local internal = obj.module("--MODULE_NAME--")
 
 local object_id = "--OBJECT_ID--"
 local params_keys = {

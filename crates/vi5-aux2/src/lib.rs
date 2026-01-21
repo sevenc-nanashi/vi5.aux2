@@ -115,6 +115,14 @@ impl Vi5Aux2 {
             .map_err(|e| anyhow::anyhow!("vi5-cef クライアントの初期化に失敗しました: {}", e))?;
         aviutl2::log::info!("vi5-cef initialized successfully.");
         let mut requires_restart = false;
+        let mut requires_reload = false;
+
+        let module_name = process_path::get_dylib_path()
+            .expect("Failed to get dylib path (unreachable on Windows)")
+            .file_stem()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
         let script_dir = get_script_dir(&info.project_name);
         aviutl2::log::info!("Project script directory: {:?}", script_dir);
         if !script_dir.exists() {
@@ -201,6 +209,7 @@ impl Vi5Aux2 {
                     "--LABEL--",
                     format!("--label:vi5.aux2\\{}", info.project_name).as_str(),
                 )
+                .replace("--MODULE_NAME--", module_name.as_str())
                 .replace("--PARAMETER_KEYS--", keys.as_str())
                 .replace("--PARAMETER_VALUES--", values.as_str())
                 .replace(r#"--PARAMETER_TYPES--"#, types.as_str())
@@ -239,6 +248,8 @@ impl Vi5Aux2 {
                             object.id,
                         );
                         requires_restart = true;
+                    } else {
+                        requires_reload = true;
                     }
                 }
             } else {
@@ -266,6 +277,16 @@ impl Vi5Aux2 {
                     edit_handle.restart_host_app();
                 }
             }
+        } else if requires_reload {
+            aviutl2::log::info!("Script directory updated.");
+            native_dialog::DialogBuilder::message()
+                .set_title("vi5.aux2")
+                .set_text(
+                    "オブジェクトが更新されました。\nF5を押してスクリプトモジュールをリロードしてください。",
+                )
+                .alert()
+                .spawn()
+                .await?;
         }
 
         Ok(())
