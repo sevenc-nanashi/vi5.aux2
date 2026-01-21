@@ -130,10 +130,10 @@ impl InternalModule {
                         "Color" => {
                             let color = serde_json::from_value::<u32>(value.clone())?;
                             vi5_cef::ParameterValue::Color(vi5_cef::Color {
-                                r: ((color >> 16) & 0xFF) as f64 / 255.0,
-                                g: ((color >> 8) & 0xFF) as f64 / 255.0,
-                                b: (color & 0xFF) as f64 / 255.0,
-                                a: ((color >> 24) & 0xFF) as f64 / 255.0,
+                                r: ((color >> 16) & 0xFF) as u8,
+                                g: ((color >> 8) & 0xFF) as u8,
+                                b: (color & 0xFF) as u8,
+                                a: ((color >> 24) & 0xFF) as u8,
                             })
                         }
                         _ => vi5_cef::ParameterValue::Str(String::new()),

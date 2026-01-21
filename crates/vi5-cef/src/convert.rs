@@ -81,10 +81,10 @@ impl ParameterValue {
 impl Color {
     fn into_proto(self) -> protocol::common::Color {
         protocol::common::Color {
-            r: self.r,
-            g: self.g,
-            b: self.b,
-            a: self.a,
+            r: self.r as _,
+            g: self.g as _,
+            b: self.b as _,
+            a: self.a as _,
         }
     }
 }
@@ -206,10 +206,10 @@ impl TryFrom<protocol::common::parameter::Value> for ParameterValue {
 impl From<protocol::common::Color> for Color {
     fn from(value: protocol::common::Color) -> Self {
         Self {
-            r: value.r,
-            g: value.g,
-            b: value.b,
-            a: value.a,
+            r: value.r as _,
+            g: value.g as _,
+            b: value.b as _,
+            a: value.a as _,
         }
     }
 }

@@ -106,10 +106,10 @@ pub enum ParameterValue {
 
 #[derive(Debug, Clone)]
 pub struct Color {
-    pub r: f64,
-    pub g: f64,
-    pub b: f64,
-    pub a: f64,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
 }
 
 #[derive(Debug, Clone)]

@@ -4,5 +4,5 @@ export function colorToP5Tuple(color: {
   b: number;
   a: number;
 }): [number, number, number, number] {
-  return [color.r * 255, color.g * 255, color.b * 255, color.a * 255];
+  return [color.r, color.g, color.b, color.a];
 }

@@ -10,12 +10,12 @@ export default defineObject({
       step: NumberStep.ONE,
       min: 10,
       max: 100,
-      default: 50,
+      default: 100,
       label: "Radius",
     },
     color: {
       type: "color",
-      default: { r: 255, g: 0, b: 0, a: 1 },
+      default: { r: 255, g: 0, b: 0, a: 255 },
       label: "Color",
     },
   },
@@ -23,7 +23,8 @@ export default defineObject({
     return ctx.createCanvas(200, 200, p5.P2D);
   },
   draw(ctx, params) {
-    ctx.p.background(200);
+    console.log("Drawing with params:", params)
+    ctx.p.background(100);
     ctx.p.fill(...colorToP5Tuple(params.color));
     ctx.p.ellipse(100, 100, params.radius, params.radius);
   },

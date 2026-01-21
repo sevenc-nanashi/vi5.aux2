@@ -14,7 +14,7 @@ export type Color = {
   r: number;
   g: number;
   b: number;
-  a: 0 | 1;
+  a: 0 | 255;
 };
 
 export type ParameterType<T extends keyof typeof parameterTypes> = T extends "string"

@@ -18,7 +18,14 @@ local param_types = {
 for i = 1, #params_keys do
   serialized_params_keys[i] = params_keys[i]
   local v = param_values[i]
-  if type(v) == "number" then
+  local t = param_types[i]
+  if t == "Color" then
+    if v == nil then
+      serialized_params_values[i] = internal.serialize_number(0)
+    else
+      serialized_params_values[i] = internal.serialize_number(0xff000000 + v)
+    end
+  elseif type(v) == "number" then
     serialized_params_values[i] = internal.serialize_number(v)
   elseif type(v) == "string" then
     serialized_params_values[i] = internal.serialize_string(v)

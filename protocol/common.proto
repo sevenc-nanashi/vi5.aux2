@@ -33,10 +33,10 @@ message Parameter {
 }
 
 message Color {
-  double r = 1;
-  double g = 2;
-  double b = 3;
-  double a = 4;
+  uint32 r = 1;
+  uint32 g = 2;
+  uint32 b = 3;
+  uint32 a = 4;
 }
 
 message ObjectInfo {

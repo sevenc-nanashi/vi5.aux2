@@ -67,7 +67,7 @@ export function createVi5Plugin(config: Config, restartServer: () => Promise<voi
         if (import.meta.hot) {
           import.meta.hot.accept((newModule) => {
             if (newModule?.default) {
-              window.__vi5__.register(__vi5_objectId, newModule.default);
+              window.__vi5__.register(newModule.default);
               newModule.__vi5_setObjectId(newModule.default.id);
             }
           });
