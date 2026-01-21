@@ -8,6 +8,7 @@ mod types;
 
 use std::sync::Arc;
 
+use clap::Parser;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
@@ -18,6 +19,21 @@ use crate::gpu_capture::GpuCapture;
 use crate::handlers::create_client;
 use crate::render_loop::RenderLoop;
 
+#[derive(clap::Parser, Debug)]
+pub struct Args {
+    /// Enable hardware acceleration
+    #[clap(long)]
+    hardware_acceleration: bool,
+
+    /// Launch devtools
+    #[clap(long)]
+    devtools: bool,
+
+    /// Port to listen on
+    #[clap(long, default_value = "50051")]
+    port: u16,
+}
+
 fn main() -> anyhow::Result<()> {
     // env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
     //     .target(env_logger::Target::Stderr)
@@ -26,8 +42,7 @@ fn main() -> anyhow::Result<()> {
         .with(
             tracing_subscriber::fmt::layer()
                 .with_thread_ids(true)
-                .with_thread_names(true)
-                .with_writer(std::io::stderr),
+                .with_thread_names(true),
         )
         .with(
             tracing_subscriber::EnvFilter::builder()
@@ -48,7 +63,9 @@ fn main() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let settings = build_settings();
+    let cli_args = Args::parse();
+    let mut settings = build_settings();
+    settings.remote_debugging_port = if cli_args.devtools { 9222 } else { 0 };
     let _shutdown_guard = initialize_cef(&args, &settings)?;
 
     let gpu = Arc::new(GpuCapture::new()?);
@@ -59,18 +76,18 @@ fn main() -> anyhow::Result<()> {
         crate::render_loop::on_paint,
         crate::render_loop::on_accelerated_paint,
     );
-    let browser = create_browser(&mut client)?;
+    let browser = create_browser(&mut client, cli_args.hardware_acceleration)?;
     let render_loop = RenderLoop::new(browser);
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
-        .block_on(main_server(render_loop))?;
+        .block_on(main_server(render_loop, cli_args.port))?;
     Ok(())
 }
 
-pub async fn main_server(render_loop: RenderLoop) -> anyhow::Result<()> {
+pub async fn main_server(render_loop: RenderLoop, port: u16) -> anyhow::Result<()> {
     let server = server::MainServer::new(render_loop);
-    let addr = "[::1]:50051".parse().unwrap();
+    let addr = format!("[::1]:{}", port).parse().unwrap();
     tracing::info!("Starting gRPC server on {}", addr);
     tonic::transport::Server::builder()
         .add_service(crate::protocol::libserver::lib_server_server::LibServerServer::new(server))

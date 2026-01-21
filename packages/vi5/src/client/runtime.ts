@@ -3,8 +3,15 @@ import * as fastBase64 from "fast-base64";
 import * as protobuf from "@bufbuild/protobuf";
 import {
   BatchRenderRequestSchema,
+  type ObjectInfo,
   type Parameter,
+  type ParameterDefinition as GrpcParameterDefinition,
+  type ParameterType as GrpcParameterType,
   type RenderRequest,
+  ParameterDefinitionSchema as GrpcParameterDefinitionSchema,
+  ParameterTypeSchema,
+  ParameterSchema,
+  ObjectInfoSchema,
 } from "../gen/common_pb";
 
 import { vi5Log } from "./log";
@@ -58,7 +65,7 @@ async function initializeContext<T extends ParameterDefinitions>(
 ): Promise<void> {
   const ctx = new Vi5Context();
   // TODO: エラー処理
-  const p = new p5((sketch) => {
+  new p5((sketch) => {
     ctx.initialize(sketch);
     sketch.setup = () => {
       const setup = object.setup(ctx, parameter);
@@ -107,6 +114,108 @@ function grpcParamsToJsParams<T extends ParameterDefinitions>(
   return params as InferParameters<T>;
 }
 
+function toGrpcParameterType(
+  definition: ParameterDefinitions[string],
+): GrpcParameterType {
+  switch (definition.type) {
+    case "string":
+      return protobuf.create(ParameterTypeSchema, {
+        kind: {
+          case: "string",
+          value: {},
+        },
+      });
+    case "text":
+      return protobuf.create(ParameterTypeSchema, {
+        kind: {
+          case: "text",
+          value: {},
+        },
+      });
+    case "boolean":
+      return protobuf.create(ParameterTypeSchema, {
+        kind: {
+          case: "boolean",
+          value: {},
+        },
+      });
+    case "number":
+      return protobuf.create(ParameterTypeSchema, {
+        kind: {
+          case: "number",
+          value: {
+            step: definition.step,
+            min: definition.min,
+            max: definition.max,
+          },
+        },
+      });
+    case "color":
+      return protobuf.create(ParameterTypeSchema, {
+        kind: {
+          case: "color",
+          value: {},
+        },
+      });
+  }
+}
+
+function toGrpcDefaultValue(
+  key: string,
+  definition: ParameterDefinitions[string],
+): Parameter | undefined {
+  if (definition.default === undefined) {
+    return undefined;
+  }
+  switch (definition.type) {
+    case "string":
+      return protobuf.create(ParameterSchema, {
+        key,
+        value: { case: "strValue", value: definition.default },
+      });
+    case "text":
+      return protobuf.create(ParameterSchema, {
+        key,
+        value: { case: "textValue", value: definition.default },
+      });
+    case "number":
+      return protobuf.create(ParameterSchema, {
+        key,
+        value: { case: "numberValue", value: definition.default },
+      });
+    case "boolean":
+      return protobuf.create(ParameterSchema, {
+        key,
+        value: { case: "boolValue", value: definition.default },
+      });
+    case "color":
+      return protobuf.create(ParameterSchema, {
+        key,
+        value: {
+          case: "colorValue",
+          value: {
+            r: definition.default.r,
+            g: definition.default.g,
+            b: definition.default.b,
+            a: definition.default.a,
+          },
+        },
+      });
+  }
+}
+
+function toGrpcParameterDefinition(
+  key: string,
+  definition: ParameterDefinitions[string],
+): GrpcParameterDefinition {
+  return protobuf.create(GrpcParameterDefinitionSchema, {
+    key,
+    label: definition.label ?? key,
+    type: toGrpcParameterType(definition),
+    defaultValue: toGrpcDefaultValue(key, definition),
+  });
+}
+
 export class Vi5Runtime {
   readonly canvas: HTMLCanvasElement;
   readonly ctx: CanvasRenderingContext2D;
@@ -123,6 +232,16 @@ export class Vi5Runtime {
       InitializeInfoSchema,
       {
         rendererVersion: "1.0.0",
+        objectInfos: Array.from(this.objects.values()).map(
+          (obj): ObjectInfo =>
+            protobuf.create(ObjectInfoSchema, {
+              id: obj.id,
+              label: obj.label,
+              parameterDefinitions: Object.entries(obj.parameters).map(
+                ([key, def]) => toGrpcParameterDefinition(key, def),
+              ),
+            }),
+        ),
       },
       0,
     );

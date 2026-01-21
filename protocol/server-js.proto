@@ -5,7 +5,10 @@ package serverjs;
 
 import "common.proto";
 
-message InitializeInfo { string renderer_version = 1; }
+message InitializeInfo {
+  string renderer_version = 1;
+  repeated common.ObjectInfo object_infos = 2;
+}
 
 message RendereredObjectInfo {
   int32 x = 1;

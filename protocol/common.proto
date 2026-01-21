@@ -45,12 +45,24 @@ message ObjectInfo {
   repeated ParameterDefinition parameter_definitions = 3;
 }
 
-enum ParameterType {
-  PARAMETER_STRING = 0;
-  PARAMETER_TEXT = 1;
-  PARAMETER_BOOLEAN = 2;
-  PARAMETER_NUMBER = 3;
-  PARAMETER_COLOR = 4;
+message ParameterString {}
+message ParameterText {}
+message ParameterBoolean {}
+message ParameterNumber {
+  double step = 1;
+  optional double min = 2;
+  optional double max = 3;
+}
+message ParameterColor {}
+
+message ParameterType {
+  oneof kind {
+    ParameterString string = 1;
+    ParameterText text = 2;
+    ParameterBoolean boolean = 3;
+    ParameterNumber number = 4;
+    ParameterColor color = 5;
+  }
 }
 
 message ParameterDefinition {

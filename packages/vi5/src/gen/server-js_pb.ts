@@ -6,6 +6,7 @@
 
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { ObjectInfo } from "./common_pb";
 import { file_common } from "./common_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -13,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file server-js.proto.
  */
 export const file_server_js: GenFile = /*@__PURE__*/
-  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzIioKDkluaXRpYWxpemVJbmZvEhgKEHJlbmRlcmVyX3ZlcnNpb24YASABKAkiSwoUUmVuZGVyZXJlZE9iamVjdEluZm8SCQoBeBgBIAEoBRIJCgF5GAIgASgFEg0KBXdpZHRoGAMgASgFEg4KBmhlaWdodBgEIAEoBSKMAQoUU2luZ2xlUmVuZGVyUmVzcG9uc2USDQoFbm9uY2UYASABKAUSQAoWcmVuZGVyZXJlZF9vYmplY3RfaW5mbxgCIAEoCzIeLnNlcnZlcmpzLlJlbmRlcmVyZWRPYmplY3RJbmZvSAASFwoNZXJyb3JfbWVzc2FnZRgDIAEoCUgAQgoKCHJlc3BvbnNlInAKHU1heWJlSW5jb21wbGV0ZVJlbmRlclJlc3BvbnNlEjgKEHJlbmRlcl9yZXNwb25zZXMYASADKAsyHi5zZXJ2ZXJqcy5TaW5nbGVSZW5kZXJSZXNwb25zZRIVCg1pc19pbmNvbXBsZXRlGAIgASgIYgZwcm90bzM", [file_common]);
+  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzIlQKDkluaXRpYWxpemVJbmZvEhgKEHJlbmRlcmVyX3ZlcnNpb24YASABKAkSKAoMb2JqZWN0X2luZm9zGAIgAygLMhIuY29tbW9uLk9iamVjdEluZm8iSwoUUmVuZGVyZXJlZE9iamVjdEluZm8SCQoBeBgBIAEoBRIJCgF5GAIgASgFEg0KBXdpZHRoGAMgASgFEg4KBmhlaWdodBgEIAEoBSKMAQoUU2luZ2xlUmVuZGVyUmVzcG9uc2USDQoFbm9uY2UYASABKAUSQAoWcmVuZGVyZXJlZF9vYmplY3RfaW5mbxgCIAEoCzIeLnNlcnZlcmpzLlJlbmRlcmVyZWRPYmplY3RJbmZvSAASFwoNZXJyb3JfbWVzc2FnZRgDIAEoCUgAQgoKCHJlc3BvbnNlInAKHU1heWJlSW5jb21wbGV0ZVJlbmRlclJlc3BvbnNlEjgKEHJlbmRlcl9yZXNwb25zZXMYASADKAsyHi5zZXJ2ZXJqcy5TaW5nbGVSZW5kZXJSZXNwb25zZRIVCg1pc19pbmNvbXBsZXRlGAIgASgIYgZwcm90bzM", [file_common]);
 
 /**
  * @generated from message serverjs.InitializeInfo
@@ -23,6 +24,11 @@ export type InitializeInfo = Message<"serverjs.InitializeInfo"> & {
    * @generated from field: string renderer_version = 1;
    */
   rendererVersion: string;
+
+  /**
+   * @generated from field: repeated common.ObjectInfo object_infos = 2;
+   */
+  objectInfos: ObjectInfo[];
 };
 
 /**

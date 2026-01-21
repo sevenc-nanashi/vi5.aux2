@@ -40,6 +40,7 @@ type ParameterDefinition<T extends keyof typeof parameterTypes> =
   T extends "number"
     ? {
         type: T;
+        label?: string;
         default?: ParameterType<T>;
         step: number;
         min?: number;
@@ -47,6 +48,7 @@ type ParameterDefinition<T extends keyof typeof parameterTypes> =
       }
     : {
         type: T;
+        label?: string;
         default?: ParameterType<T>;
       };
 export type InferParameters<

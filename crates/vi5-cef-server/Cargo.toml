@@ -22,6 +22,7 @@ base64 = "0.22.1"
 tonic-reflection = "0.14.2"
 color-backtrace = "0.7.2"
 futures = "0.3.31"
+clap = { version = "4.5.54", features = ["derive"] }
 
 [build-dependencies]
 anyhow = "1.0.100"

@@ -19,10 +19,6 @@ pub fn prepare_process(args: &cef::args::Args) -> anyhow::Result<bool> {
         "disable-background-timer-throttling",
     )));
     cmd.append_switch(Some(&CefString::from("disable-renderer-backgrounding")));
-    cmd.append_switch_with_value(
-        Some(&CefString::from("remote-debugging-port")),
-        Some(&CefString::from("9222")),
-    );
 
     let switch = CefString::from("type");
     let is_browser_process = cmd.has_switch(Some(&switch)) != 1;
@@ -80,10 +76,13 @@ pub fn initialize_cef(
     Ok(ShutdownGuard)
 }
 
-pub fn create_browser(client: &mut cef::Client) -> Result<Browser, RenderError> {
+pub fn create_browser(
+    client: &mut cef::Client,
+    hardware_acceleration: bool,
+) -> Result<Browser, RenderError> {
     let parent: WindowHandle = cef::sys::HWND::default();
     let mut window_info = WindowInfo::default().set_as_windowless(parent);
-    window_info.shared_texture_enabled = 1;
+    window_info.shared_texture_enabled = hardware_acceleration as i32;
     let browser_settings = BrowserSettings {
         windowless_frame_rate: 60,
         background_color: 0x00000000,
@@ -99,10 +98,8 @@ pub fn create_browser(client: &mut cef::Client) -> Result<Browser, RenderError> 
         None,
     )
     .ok_or(RenderError::BrowserCreateFailed)?;
-    browser
-        .host()
-        .unwrap()
-        .invalidate(cef::PaintElementType::VIEW);
+    let host = browser.host().unwrap();
+    host.invalidate(cef::PaintElementType::VIEW);
 
     if let Some(host) = browser.host() {
         host.was_resized();

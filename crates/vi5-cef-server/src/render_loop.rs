@@ -100,22 +100,26 @@ pub fn on_accelerated_paint(
 
 pub struct RenderLoop {
     browser: cef::Browser,
-    initialized:
-        Arc<tokio::sync::OnceCell<anyhow::Result<crate::protocol::serverjs::InitializeInfo>>>,
+    initialized: Arc<std::sync::Mutex<Option<anyhow::Result<crate::protocol::serverjs::InitializeInfo>>>>,
 }
 
 impl RenderLoop {
     pub fn new(browser: cef::Browser) -> Self {
         Self {
             browser,
-            initialized: Arc::new(tokio::sync::OnceCell::new()),
+            initialized: Arc::new(std::sync::Mutex::new(None)),
         }
     }
 
     pub async fn wait_for_initialization(&self) -> anyhow::Result<()> {
         let start_time = std::time::Instant::now();
         loop {
-            if self.initialized.get().is_some() {
+            if self
+                .initialized
+                .lock()
+                .expect("Failed to lock initialization state")
+                .is_some()
+            {
                 return Ok(());
             }
             cef::do_message_loop_work();
@@ -130,26 +134,40 @@ impl RenderLoop {
         &self,
         url: &str,
     ) -> anyhow::Result<crate::protocol::serverjs::InitializeInfo> {
+        {
+            let mut initialized = self
+                .initialized
+                .lock()
+                .expect("Failed to lock initialization state");
+            *initialized = None;
+        }
         PAINT_CALLBACKS.clear();
         PAINT_CALLBACKS.insert(
             0,
             Box::new({
                 let initialized = self.initialized.clone();
                 move |buffer, _, _| {
-                    match read_message_from_image::<crate::protocol::serverjs::InitializeInfo>(
-                        buffer,
-                    ) {
+                    let result = match read_message_from_image::<
+                        crate::protocol::serverjs::InitializeInfo,
+                    >(buffer)
+                    {
                         Ok(info) => {
                             tracing::info!("Page initialization complete");
-                            let _ = initialized.set(Ok(info));
+                            Ok(info)
                         }
                         Err(e) => {
                             tracing::error!("Failed to decode InitializationComplete: {}", e);
-                            let _ = initialized.set(Err(anyhow::anyhow!(
+                            Err(anyhow::anyhow!(
                                 "Failed to decode InitializationComplete: {}",
                                 e
-                            )));
+                            ))
                         }
+                    };
+                    let mut initialized = initialized
+                        .lock()
+                        .expect("Failed to lock initialization state");
+                    if initialized.is_none() {
+                        *initialized = Some(result);
                     }
                     std::ops::ControlFlow::Break(())
                 }
@@ -161,7 +179,11 @@ impl RenderLoop {
             .unwrap()
             .load_url(Some(&cef::CefString::from(url)));
         self.wait_for_initialization().await?;
-        match self.initialized.get().unwrap() {
+        let initialized = self
+            .initialized
+            .lock()
+            .expect("Failed to lock initialization state");
+        match initialized.as_ref().expect("Initialization state missing") {
             Ok(info) => Ok(info.clone()),
             Err(e) => Err(anyhow::anyhow!("Initialization failed: {}", e)),
         }

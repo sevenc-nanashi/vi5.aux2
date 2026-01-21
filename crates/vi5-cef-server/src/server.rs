@@ -11,6 +11,28 @@ impl crate::protocol::libserver::lib_server_server::LibServer for MainServer {
     ) -> Result<tonic::Response<crate::protocol::libserver::InitializeResponse>, tonic::Status>
     {
         let req = request.into_inner();
+
+        let mut processes_guard = self.processes.lock().await;
+        if !processes_guard.is_empty() {
+            for mut process in processes_guard.drain(..) {
+                match process.kill().await {
+                    Ok(_) => {
+                        tracing::info!(
+                            "Successfully killed existing vi5 process with PID: {}",
+                            process.id().unwrap_or(0)
+                        );
+                    }
+                    Err(e) => {
+                        tracing::error!(
+                            "Failed to kill existing vi5 process with PID: {}: {}",
+                            process.id().unwrap_or(0),
+                            e
+                        );
+                    }
+                }
+            }
+        }
+
         let random_port: u16 = rand::random::<u16>() % 20000 + 10000;
         tracing::info!("Received initialize request: {:?}", req);
         let path = std::path::Path::new(&req.root_path);
@@ -38,7 +60,7 @@ impl crate::protocol::libserver::lib_server_server::LibServer for MainServer {
                 code
             )));
         }
-        self.processes.lock().await.push(process);
+        processes_guard.push(process);
         let response = self
             .render_loop
             .initialize(&format!("http://localhost:{}/vi5", random_port))
@@ -46,7 +68,7 @@ impl crate::protocol::libserver::lib_server_server::LibServer for MainServer {
             .map_err(|e| tonic::Status::internal(format!("Initialization failed: {}", e)))?;
         let response = crate::protocol::libserver::InitializeResponse {
             renderer_version: response.renderer_version,
-            object_infos: vec![],
+            object_infos: response.object_infos,
         };
 
         tracing::info!("Initialization completed: {:?}", response);

@@ -1,0 +1,13 @@
+[package]
+name = "vi5-cef"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+prost = "0.14.3"
+tonic = { version = "0.14.2", features = ["transport"] }
+thiserror = "2.0.16"
+tonic-prost = "0.14.2"
+
+[build-dependencies]
+tonic-prost-build = "0.14.2"
