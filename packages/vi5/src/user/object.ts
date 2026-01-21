@@ -1,4 +1,5 @@
 import type p5 from "p5";
+import { NumberStep } from "../gen/common_pb";
 import type { Vi5Context } from "./context";
 
 export const parameterTypes = {
@@ -30,26 +31,26 @@ export type ParameterType<T extends keyof typeof parameterTypes> =
             : never;
 
 export const numberStep = {
-  "1": "one",
-  "0.1": "pointOne",
-  "0.01": "pointZeroOne",
-  "0.001": "pointZeroZeroOne",
+  "1": NumberStep.ONE,
+  "0.1": NumberStep.POINT_ONE,
+  "0.01": NumberStep.POINT_ZERO_ONE,
+  "0.001": NumberStep.POINT_ZERO_ZERO_ONE,
 } as const;
 
 type ParameterDefinition<T extends keyof typeof parameterTypes> =
   T extends "number"
     ? {
         type: T;
-        label?: string;
-        default?: ParameterType<T>;
-        step: number;
-        min?: number;
-        max?: number;
+        label: string;
+        default: ParameterType<T>;
+        step: NumberStep;
+        min: number;
+        max: number;
       }
     : {
         type: T;
-        label?: string;
-        default?: ParameterType<T>;
+        label: string;
+        default: ParameterType<T>;
       };
 export type InferParameters<
   T extends Record<string, ParameterDefinition<keyof typeof parameterTypes>>,

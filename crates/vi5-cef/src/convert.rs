@@ -4,6 +4,8 @@ use crate::types::{
     ParameterType, ParameterValue, RenderRequest, RenderResponse, RenderResponseData,
 };
 
+use crate::types::NumberStep;
+
 #[derive(Debug, thiserror::Error)]
 pub enum ConversionError {
     #[error("missing render response")]
@@ -14,6 +16,8 @@ pub enum ConversionError {
     MissingParameterType,
     #[error("missing parameter type kind")]
     MissingParameterTypeKind,
+    #[error("invalid number step: {0}")]
+    InvalidNumberStep(i32),
 }
 
 impl ConversionError {
@@ -149,11 +153,15 @@ impl TryFrom<protocol::common::ParameterType> for ParameterType {
             protocol::common::parameter_type::Kind::String(_) => Ok(Self::String),
             protocol::common::parameter_type::Kind::Text(_) => Ok(Self::Text),
             protocol::common::parameter_type::Kind::Boolean(_) => Ok(Self::Boolean),
-            protocol::common::parameter_type::Kind::Number(number) => Ok(Self::Number {
-                step: number.step,
-                min: number.min,
-                max: number.max,
-            }),
+            protocol::common::parameter_type::Kind::Number(number) => {
+                let step = NumberStep::try_from(number.step)
+                    .map_err(|_| ConversionError::InvalidNumberStep(number.step))?;
+                Ok(Self::Number {
+                    step,
+                    min: number.min,
+                    max: number.max,
+                })
+            }
             protocol::common::parameter_type::Kind::Color(_) => Ok(Self::Color),
         }
     }
@@ -224,3 +232,5 @@ impl TryFrom<protocol::libserver::RenderResponse> for RenderResponse {
         })
     }
 }
+
+

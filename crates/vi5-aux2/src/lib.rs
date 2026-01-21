@@ -124,7 +124,7 @@ impl Vi5Aux2 {
                         vi5_cef::ParameterType::Number { step, min, max } => {
                             let min_str = min.map_or("-1000".to_string(), |v| v.to_string());
                             let max_str = max.map_or("1000".to_string(), |v| v.to_string());
-                            let step = "0.01"; // TODO: step を反映する
+                            let step = step.as_str();
                             format!(r#"--track@{key}:{label},{min_str},{max_str},{step}"#)
                         }
                         vi5_cef::ParameterType::Color => {

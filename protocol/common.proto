@@ -48,8 +48,16 @@ message ObjectInfo {
 message ParameterString {}
 message ParameterText {}
 message ParameterBoolean {}
+
+enum NumberStep {
+  NUMBER_STEP_ONE = 0;
+  NUMBER_STEP_POINT_ONE = 1;
+  NUMBER_STEP_POINT_ZERO_ONE = 2;
+  NUMBER_STEP_POINT_ZERO_ZERO_ONE = 3;
+}
+
 message ParameterNumber {
-  double step = 1;
+  NumberStep step = 1;
   optional double min = 2;
   optional double max = 3;
 }

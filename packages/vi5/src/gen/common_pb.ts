@@ -4,15 +4,15 @@
 // @generated from file common.proto (package common, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file common.proto.
  */
 export const file_common: GenFile = /*@__PURE__*/
-  fileDesc("Cgxjb21tb24ucHJvdG8SBmNvbW1vbiKWAQoNUmVuZGVyUmVxdWVzdBIUCgxyZW5kZXJfbm9uY2UYASABKAUSDgoGb2JqZWN0GAIgASgJEhEKCW9iamVjdF9pZBgDIAEoAxIlCgpmcmFtZV9pbmZvGAQgASgLMhEuY29tbW9uLkZyYW1lSW5mbxIlCgpwYXJhbWV0ZXJzGAUgAygLMhEuY29tbW9uLlBhcmFtZXRlciJtCglGcmFtZUluZm8SCQoBeBgBIAEoBRIJCgF5GAIgASgFEg0KBXdpZHRoGAMgASgFEg4KBmhlaWdodBgEIAEoBRIVCg1jdXJyZW50X2ZyYW1lGAUgASgFEhQKDHRvdGFsX2ZyYW1lcxgGIAEoBSKgAQoJUGFyYW1ldGVyEgsKA2tleRgBIAEoCRITCglzdHJfdmFsdWUYAiABKAlIABIUCgp0ZXh0X3ZhbHVlGAMgASgJSAASFgoMbnVtYmVyX3ZhbHVlGAQgASgBSAASFAoKYm9vbF92YWx1ZRgFIAEoCEgAEiQKC2NvbG9yX3ZhbHVlGAYgASgLMg0uY29tbW9uLkNvbG9ySABCBwoFdmFsdWUiMwoFQ29sb3ISCQoBchgBIAEoARIJCgFnGAIgASgBEgkKAWIYAyABKAESCQoBYRgEIAEoASJjCgpPYmplY3RJbmZvEgoKAmlkGAEgASgJEg0KBWxhYmVsGAIgASgJEjoKFXBhcmFtZXRlcl9kZWZpbml0aW9ucxgDIAMoCzIbLmNvbW1vbi5QYXJhbWV0ZXJEZWZpbml0aW9uIhEKD1BhcmFtZXRlclN0cmluZyIPCg1QYXJhbWV0ZXJUZXh0IhIKEFBhcmFtZXRlckJvb2xlYW4iUwoPUGFyYW1ldGVyTnVtYmVyEgwKBHN0ZXAYASABKAESEAoDbWluGAIgASgBSACIAQESEAoDbWF4GAMgASgBSAGIAQFCBgoEX21pbkIGCgRfbWF4IhAKDlBhcmFtZXRlckNvbG9yIuoBCg1QYXJhbWV0ZXJUeXBlEikKBnN0cmluZxgBIAEoCzIXLmNvbW1vbi5QYXJhbWV0ZXJTdHJpbmdIABIlCgR0ZXh0GAIgASgLMhUuY29tbW9uLlBhcmFtZXRlclRleHRIABIrCgdib29sZWFuGAMgASgLMhguY29tbW9uLlBhcmFtZXRlckJvb2xlYW5IABIpCgZudW1iZXIYBCABKAsyFy5jb21tb24uUGFyYW1ldGVyTnVtYmVySAASJwoFY29sb3IYBSABKAsyFi5jb21tb24uUGFyYW1ldGVyQ29sb3JIAEIGCgRraW5kIoABChNQYXJhbWV0ZXJEZWZpbml0aW9uEgsKA2tleRgBIAEoCRIjCgR0eXBlGAIgASgLMhUuY29tbW9uLlBhcmFtZXRlclR5cGUSDQoFbGFiZWwYAyABKAkSKAoNZGVmYXVsdF92YWx1ZRgEIAEoCzIRLmNvbW1vbi5QYXJhbWV0ZXIiRAoSQmF0Y2hSZW5kZXJSZXF1ZXN0Ei4KD3JlbmRlcl9yZXF1ZXN0cxgBIAMoCzIVLmNvbW1vbi5SZW5kZXJSZXF1ZXN0YgZwcm90bzM");
+  fileDesc("Cgxjb21tb24ucHJvdG8SBmNvbW1vbiKWAQoNUmVuZGVyUmVxdWVzdBIUCgxyZW5kZXJfbm9uY2UYASABKAUSDgoGb2JqZWN0GAIgASgJEhEKCW9iamVjdF9pZBgDIAEoAxIlCgpmcmFtZV9pbmZvGAQgASgLMhEuY29tbW9uLkZyYW1lSW5mbxIlCgpwYXJhbWV0ZXJzGAUgAygLMhEuY29tbW9uLlBhcmFtZXRlciJtCglGcmFtZUluZm8SCQoBeBgBIAEoBRIJCgF5GAIgASgFEg0KBXdpZHRoGAMgASgFEg4KBmhlaWdodBgEIAEoBRIVCg1jdXJyZW50X2ZyYW1lGAUgASgFEhQKDHRvdGFsX2ZyYW1lcxgGIAEoBSKgAQoJUGFyYW1ldGVyEgsKA2tleRgBIAEoCRITCglzdHJfdmFsdWUYAiABKAlIABIUCgp0ZXh0X3ZhbHVlGAMgASgJSAASFgoMbnVtYmVyX3ZhbHVlGAQgASgBSAASFAoKYm9vbF92YWx1ZRgFIAEoCEgAEiQKC2NvbG9yX3ZhbHVlGAYgASgLMg0uY29tbW9uLkNvbG9ySABCBwoFdmFsdWUiMwoFQ29sb3ISCQoBchgBIAEoARIJCgFnGAIgASgBEgkKAWIYAyABKAESCQoBYRgEIAEoASJjCgpPYmplY3RJbmZvEgoKAmlkGAEgASgJEg0KBWxhYmVsGAIgASgJEjoKFXBhcmFtZXRlcl9kZWZpbml0aW9ucxgDIAMoCzIbLmNvbW1vbi5QYXJhbWV0ZXJEZWZpbml0aW9uIhEKD1BhcmFtZXRlclN0cmluZyIPCg1QYXJhbWV0ZXJUZXh0IhIKEFBhcmFtZXRlckJvb2xlYW4iZwoPUGFyYW1ldGVyTnVtYmVyEiAKBHN0ZXAYASABKA4yEi5jb21tb24uTnVtYmVyU3RlcBIQCgNtaW4YAiABKAFIAIgBARIQCgNtYXgYAyABKAFIAYgBAUIGCgRfbWluQgYKBF9tYXgiEAoOUGFyYW1ldGVyQ29sb3Ii6gEKDVBhcmFtZXRlclR5cGUSKQoGc3RyaW5nGAEgASgLMhcuY29tbW9uLlBhcmFtZXRlclN0cmluZ0gAEiUKBHRleHQYAiABKAsyFS5jb21tb24uUGFyYW1ldGVyVGV4dEgAEisKB2Jvb2xlYW4YAyABKAsyGC5jb21tb24uUGFyYW1ldGVyQm9vbGVhbkgAEikKBm51bWJlchgEIAEoCzIXLmNvbW1vbi5QYXJhbWV0ZXJOdW1iZXJIABInCgVjb2xvchgFIAEoCzIWLmNvbW1vbi5QYXJhbWV0ZXJDb2xvckgAQgYKBGtpbmQigAEKE1BhcmFtZXRlckRlZmluaXRpb24SCwoDa2V5GAEgASgJEiMKBHR5cGUYAiABKAsyFS5jb21tb24uUGFyYW1ldGVyVHlwZRINCgVsYWJlbBgDIAEoCRIoCg1kZWZhdWx0X3ZhbHVlGAQgASgLMhEuY29tbW9uLlBhcmFtZXRlciJEChJCYXRjaFJlbmRlclJlcXVlc3QSLgoPcmVuZGVyX3JlcXVlc3RzGAEgAygLMhUuY29tbW9uLlJlbmRlclJlcXVlc3QqgQEKCk51bWJlclN0ZXASEwoPTlVNQkVSX1NURVBfT05FEAASGQoVTlVNQkVSX1NURVBfUE9JTlRfT05FEAESHgoaTlVNQkVSX1NURVBfUE9JTlRfWkVST19PTkUQAhIjCh9OVU1CRVJfU1RFUF9QT0lOVF9aRVJPX1pFUk9fT05FEANiBnByb3RvMw");
 
 /**
  * @generated from message common.RenderRequest
@@ -248,9 +248,9 @@ export const ParameterBooleanSchema: GenMessage<ParameterBoolean> = /*@__PURE__*
  */
 export type ParameterNumber = Message<"common.ParameterNumber"> & {
   /**
-   * @generated from field: double step = 1;
+   * @generated from field: common.NumberStep step = 1;
    */
-  step: number;
+  step: NumberStep;
 
   /**
    * @generated from field: optional double min = 2;
@@ -378,4 +378,35 @@ export type BatchRenderRequest = Message<"common.BatchRenderRequest"> & {
  */
 export const BatchRenderRequestSchema: GenMessage<BatchRenderRequest> = /*@__PURE__*/
   messageDesc(file_common, 12);
+
+/**
+ * @generated from enum common.NumberStep
+ */
+export enum NumberStep {
+  /**
+   * @generated from enum value: NUMBER_STEP_ONE = 0;
+   */
+  ONE = 0,
+
+  /**
+   * @generated from enum value: NUMBER_STEP_POINT_ONE = 1;
+   */
+  POINT_ONE = 1,
+
+  /**
+   * @generated from enum value: NUMBER_STEP_POINT_ZERO_ONE = 2;
+   */
+  POINT_ZERO_ONE = 2,
+
+  /**
+   * @generated from enum value: NUMBER_STEP_POINT_ZERO_ZERO_ONE = 3;
+   */
+  POINT_ZERO_ZERO_ONE = 3,
+}
+
+/**
+ * Describes the enum common.NumberStep.
+ */
+export const NumberStepSchema: GenEnum<NumberStep> = /*@__PURE__*/
+  enumDesc(file_common, 0);
 
