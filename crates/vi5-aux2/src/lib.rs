@@ -280,31 +280,33 @@ impl Vi5Aux2 {
         for p in path.split(';') {
             aviutl2::log::debug!("PATH entry: {}", p);
         }
-        let mut child = tokio::process::Command::new(
-            // TODO: 実行ファイルのパスを適切に設定する
-            "e:/aviutl2/vi5.aux2/target/debug/vi5-cef-server.exe",
-        )
-        .arg("--port")
-        .arg(port.to_string())
-        .arg("--hardware-acceleration")
-        .arg("--devtools")
-        .env("PATH", path)
-        .env("NO_COLOR", "1")
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .creation_flags(0x08000000) // CREATE_NO_WINDOW
-        .tap(|cmd| {
-            aviutl2::log::info!("Launching vi5-cef server: {cmd:?}");
-        })
-        .spawn()
-        .map_err(|e| anyhow::anyhow!("vi5-cef サーバーの起動に失敗しました: {}", e))?;
+        // TODO: 実行ファイルのパスを適切に設定する
+        let cef_server_path =
+            std::path::Path::new("e:/aviutl2/vi5.aux2/target/release/vi5-cef-server.exe");
+        let mut child = tokio::process::Command::new(cef_server_path)
+            .arg("--port")
+            .arg(port.to_string())
+            .arg("--hardware-acceleration")
+            .arg("--devtools")
+            .env("PATH", path)
+            .env("NO_COLOR", "1")
+            // NOTE: vi5-cef-server.exe のあるディレクトリにしないとなぜかlibcef.dllを見つけられずに落ちる
+            .current_dir(cef_server_path.parent().unwrap())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .tap(|cmd| {
+                aviutl2::log::info!("Launching vi5-cef server: {cmd:?}");
+            })
+            .spawn()
+            .map_err(|e| anyhow::anyhow!("vi5-cef サーバーの起動に失敗しました: {}", e))?;
         let stdout = child.stdout.take().unwrap();
         let stderr = child.stderr.take().unwrap();
         tokio::spawn(async move {
             let mut stdout_reader = tokio::io::BufReader::new(stdout).lines();
             while let Some(line) = stdout_reader.next_line().await.transpose() {
                 if let Ok(line) = line {
-                    aviutl2::log::info!("[vi5-cef-server stdout] {}", line);
+                    aviutl2::log::debug!("[vi5-cef-server stdout] {}", line);
                 }
             }
         });
