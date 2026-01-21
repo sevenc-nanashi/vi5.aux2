@@ -81,23 +81,34 @@ impl InternalModule {
     fn serialize_bool(&self, input: bool) -> aviutl2::AnyResult<String> {
         Ok(serde_json::to_string(&input)?)
     }
+    #[allow(clippy::too_many_arguments)]
     fn call_object(
         &self,
         object_name: String,
         serialized_param_keys: aviutl2::module::ScriptModuleParamArray,
         serialized_param_values: aviutl2::module::ScriptModuleParamArray,
+        serialized_next_frame_values: aviutl2::module::ScriptModuleParamArray,
         param_types: aviutl2::module::ScriptModuleParamArray,
         serialized_obj_keys: aviutl2::module::ScriptModuleParamArray,
         serialized_obj_values: aviutl2::module::ScriptModuleParamArray,
     ) -> aviutl2::AnyResult<(*const u8, usize, usize)> {
         let mut params = HashMap::<String, (String, serde_json::Value)>::new();
+        let mut next_frame_params = HashMap::<String, (String, serde_json::Value)>::new();
         for i in 0..serialized_param_keys.len() {
-            if let (Some(key), Some(value), Some(kind)) = (
+            if let (Some(key), Some(value), Some(next_frame_value), Some(kind)) = (
                 serialized_param_keys.get_str(i),
                 serialized_param_values.get_str(i),
+                serialized_next_frame_values.get_str(i),
                 param_types.get_str(i),
             ) {
-                params.insert(key.to_string(), (kind, serde_json::from_str(&value)?));
+                params.insert(
+                    key.to_string(),
+                    (kind.clone(), serde_json::from_str(&value)?),
+                );
+                next_frame_params.insert(
+                    key.to_string(),
+                    (kind, serde_json::from_str(&next_frame_value)?),
+                );
             }
         }
         let mut base_obj = HashMap::<String, serde_json::Value>::new();

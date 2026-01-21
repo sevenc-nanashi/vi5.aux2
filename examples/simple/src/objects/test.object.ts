@@ -9,7 +9,7 @@ export default defineObject({
       type: "number",
       step: NumberStep.ONE,
       min: 10,
-      max: 100,
+      max: 283,
       default: 100,
       label: "Radius",
     },

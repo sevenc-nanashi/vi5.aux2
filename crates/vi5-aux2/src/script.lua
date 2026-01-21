@@ -12,9 +12,11 @@ local param_values = {
 }
 local serialized_params_keys = {};
 local serialized_params_values = {};
+local serialized_next_frame_values = {};
 local param_types = {
   --PARAMETER_TYPES--
 }
+local next_frame = obj.time + (1 / obj.framerate)
 for i = 1, #params_keys do
   serialized_params_keys[i] = params_keys[i]
   local v = param_values[i]
@@ -22,15 +24,20 @@ for i = 1, #params_keys do
   if t == "Color" then
     if v == nil then
       serialized_params_values[i] = internal.serialize_number(0)
+      serialized_next_frame_values[i] = serialized_params_values[i]
     else
       serialized_params_values[i] = internal.serialize_number(0xff000000 + v)
+      serialized_next_frame_values[i] = serialized_params_values[i]
     end
   elseif type(v) == "number" then
     serialized_params_values[i] = internal.serialize_number(v)
+    serialized_next_frame_values[i] = internal.serialize_number(obj.getvalue(i - 1, next_frame) or v)
   elseif type(v) == "string" then
     serialized_params_values[i] = internal.serialize_string(v)
+    serialized_next_frame_values[i] = internal.serialize_string(v)
   elseif type(v) == "boolean" then
     serialized_params_values[i] = internal.serialize_bool(v)
+    serialized_next_frame_values[i] = internal.serialize_bool(v)
   end
 end
 
@@ -53,6 +60,7 @@ local image, w, h = internal.call_object(
   object_id,
   serialized_params_keys,
   serialized_params_values,
+  serialized_next_frame_values,
   param_types,
   serialized_obj_keys,
   serialized_obj_values

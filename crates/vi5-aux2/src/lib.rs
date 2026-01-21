@@ -1,7 +1,7 @@
 mod module;
 use std::sync::{Arc, OnceLock};
 
-use aviutl2::anyhow;
+use aviutl2::{anyhow, log};
 use tap::prelude::*;
 use tokio::io::AsyncBufReadExt;
 
@@ -22,6 +22,8 @@ struct Vi5Aux2 {
 
     plugin: aviutl2::generic::SubPlugin<crate::module::InternalModule>,
 }
+
+static VAR_PREFIX: &str = "VI5_AUX2_";
 
 fn get_script_dir(project_name: &str) -> std::path::PathBuf {
     process_path::get_dylib_path()
@@ -53,7 +55,7 @@ impl Vi5Aux2 {
 }
 impl Vi5Aux2 {
     fn set_project_dir(&mut self, dir: String) -> anyhow::Result<()> {
-        aviutl2::log::info!("Setting project directory to: {}", dir);
+        log::info!("Setting project directory to: {}", dir);
         let metadata = std::fs::metadata(&dir).map_err(|e| {
             anyhow::anyhow!(
                 "指定されたフォルダのメタデータを取得できませんでした: {}: {}",
@@ -75,7 +77,7 @@ impl Vi5Aux2 {
         let server = self.server.clone();
         runtime_handle.spawn(async move {
             if let Err(e) = Self::initialize_project_dir(dir, project_dir, server).await {
-                aviutl2::log::error!("Failed to initialize project directory: {}", e);
+                log::error!("Failed to initialize project directory: {}", e);
             }
         });
         Ok(())
@@ -113,7 +115,7 @@ impl Vi5Aux2 {
             .initialize(&dir)
             .await
             .map_err(|e| anyhow::anyhow!("vi5-cef クライアントの初期化に失敗しました: {}", e))?;
-        aviutl2::log::info!("vi5-cef initialized successfully.");
+        log::info!("vi5-cef initialized successfully.");
         let mut requires_restart = false;
         let mut requires_reload = false;
 
@@ -124,7 +126,7 @@ impl Vi5Aux2 {
             .to_string_lossy()
             .to_string();
         let script_dir = get_script_dir(&info.project_name);
-        aviutl2::log::info!("Project script directory: {:?}", script_dir);
+        log::info!("Project script directory: {:?}", script_dir);
         if !script_dir.exists() {
             tokio::fs::create_dir_all(&script_dir).await?;
             requires_restart = true;
@@ -137,25 +139,75 @@ impl Vi5Aux2 {
                 .iter()
                 .enumerate()
                 .map(|(i, param)| {
+                    let key = &param.key;
                     let label = &param.label;
                     match param.parameter_type {
                         vi5_cef::ParameterType::String => {
-                            format!(r#"--value{i}:{label},"""#)
+                            let default_value = match &param.default_value {
+                                Some(vi5_cef::Parameter {
+                                    value: vi5_cef::ParameterValue::Str(value),
+                                    ..
+                                }) => value.clone(),
+                                _ => "".to_string(),
+                            };
+                            let default_value = serde_json::to_string(&default_value).unwrap();
+                            format!(r#"--value@{VAR_PREFIX}{key}:{label},{default_value}"#)
                         }
                         vi5_cef::ParameterType::Text => {
-                            format!(r#"--text{i}:{label},"#)
+                            let default_value = match &param.default_value {
+                                Some(vi5_cef::Parameter {
+                                    value: vi5_cef::ParameterValue::Text(value),
+                                    ..
+                                }) => value.clone(),
+                                _ => "".to_string(),
+                            };
+                            let default_value = serde_json::to_string(&default_value).unwrap();
+                            format!(r#"--text@{VAR_PREFIX}{key}:{label},{default_value}"#)
                         }
                         vi5_cef::ParameterType::Boolean => {
-                            format!(r#"--check{i}:{label},"#)
+                            let default_value = match &param.default_value {
+                                Some(vi5_cef::Parameter {
+                                    value: vi5_cef::ParameterValue::Bool(value),
+                                    ..
+                                }) => *value,
+                                _ => false,
+                            };
+                            let default_value = if default_value { "true" } else { "false" };
+                            format!(r#"--check@{VAR_PREFIX}{key}:{label},{default_value}"#)
                         }
                         vi5_cef::ParameterType::Number { step, min, max } => {
                             let min_str = min.to_string();
                             let max_str = max.to_string();
                             let step = step.as_str();
-                            format!(r#"--track{i}:{label},{min_str},{max_str},{step}"#)
+                            let default_value = match &param.default_value {
+                                Some(vi5_cef::Parameter {
+                                    value: vi5_cef::ParameterValue::Number(value),
+                                    ..
+                                }) => *value,
+                                _ => min,
+                            };
+                            format!(
+                                r#"--track{i}:{label},{min_str},{max_str},{default_value},{step}"#
+                            )
                         }
                         vi5_cef::ParameterType::Color => {
-                            format!(r#"--color{i}:{label},"#)
+                            let default_value = match &param.default_value {
+                                Some(vi5_cef::Parameter {
+                                    value: vi5_cef::ParameterValue::Color(value),
+                                    ..
+                                }) => {
+                                    if value.a == 0 {
+                                        "nil".to_string()
+                                    } else {
+                                        let r = value.r as u32;
+                                        let g = value.g as u32;
+                                        let b = value.b as u32;
+                                        format!("0x{:02X}{:02X}{:02X}", r, g, b)
+                                    }
+                                }
+                                _ => "nil".to_string(),
+                            };
+                            format!(r#"--color@{VAR_PREFIX}{key}:{label},{default_value}"#)
                         }
                     }
                 })
@@ -171,21 +223,15 @@ impl Vi5Aux2 {
                 .parameter_definitions
                 .iter()
                 .enumerate()
-                .map(|(i, param)| match param.parameter_type {
-                    vi5_cef::ParameterType::String => {
-                        format!(r#"value{i}"#)
-                    }
-                    vi5_cef::ParameterType::Text => {
-                        format!(r#"text{i}"#)
-                    }
-                    vi5_cef::ParameterType::Boolean => {
-                        format!(r#"check{i}"#)
-                    }
-                    vi5_cef::ParameterType::Number { .. } => {
-                        format!(r#"track{i} or obj.track{i} or 0"#)
-                    }
-                    vi5_cef::ParameterType::Color => {
-                        format!(r#"color{i}"#)
+                .map(|(i, param)| {
+                    let key = &param.key;
+                    match param.parameter_type {
+                        vi5_cef::ParameterType::Number { .. } => {
+                            format!(r#"obj.track{i} or 0"#)
+                        }
+                        _ => {
+                            format!(r#"{VAR_PREFIX}{key}"#)
+                        }
                     }
                 })
                 .collect::<Vec<_>>()
@@ -218,7 +264,7 @@ impl Vi5Aux2 {
                     serde_json::to_string(&object.id).unwrap().as_str(),
                 );
             let script_path = script_dir.join(format!("{}.obj2", object.label));
-            aviutl2::log::info!(
+            log::info!(
                 "Loaded script for object '{}': {:?}",
                 object.id,
                 script_path
@@ -235,18 +281,25 @@ impl Vi5Aux2 {
                     .take_while(|line| line == &"--END_HEADER")
                     .collect::<Vec<_>>()
                     .join("\n");
-                if existing_content != script_content {
+                log::debug!(
+                    "Comparing existing and new script contents for object '{}'",
+                    object.id
+                );
+                if existing_content == script_content {
+                    log::info!(
+                        "Script file for object '{}' is up to date: {:?}",
+                        object.id,
+                        script_path
+                    );
+                } else {
                     tokio::fs::write(&script_path, script_content).await?;
-                    aviutl2::log::info!(
+                    log::info!(
                         "Updated script file for object '{}': {:?}",
                         object.id,
                         script_path
                     );
                     if existing_headers != new_headers {
-                        aviutl2::log::warn!(
-                            "Script file for object '{}' has updated headers",
-                            object.id,
-                        );
+                        log::warn!("Script file for object '{}' has updated headers", object.id,);
                         requires_restart = true;
                     } else {
                         requires_reload = true;
@@ -254,7 +307,7 @@ impl Vi5Aux2 {
                 }
             } else {
                 tokio::fs::write(&script_path, script_content).await?;
-                aviutl2::log::info!(
+                log::info!(
                     "Created script file for object '{}': {:?}",
                     object.id,
                     script_path
@@ -264,29 +317,31 @@ impl Vi5Aux2 {
         }
 
         if requires_restart {
-            aviutl2::log::info!("Script directory updated.");
+            log::info!("Script directory updated requiring restart.");
             let will_restart = native_dialog::DialogBuilder::message()
                 .set_title("vi5.aux2")
-                .set_text("オブジェクトが更新されました。\nAviUtl2を再起動しますか？")
+                .set_text("オブジェクトが更新されました。\n反映にはAviUtl2の再起動が必要です。今すぐ再起動しますか？")
                 .confirm()
                 .spawn()
                 .await?;
             if will_restart {
-                aviutl2::log::info!("Restarting AviUtl2...");
+                log::info!("Restarting AviUtl2...");
                 if let Some(edit_handle) = EDIT_HANDLE.get() {
                     edit_handle.restart_host_app();
                 }
             }
         } else if requires_reload {
-            aviutl2::log::info!("Script directory updated.");
+            log::info!("Script directory updated.");
             native_dialog::DialogBuilder::message()
                 .set_title("vi5.aux2")
                 .set_text(
-                    "オブジェクトが更新されました。\nF5を押してスクリプトモジュールをリロードしてください。",
+                    "オブジェクトが更新されました。\nF5を押してスクリプトをリロードしてください。",
                 )
                 .alert()
                 .spawn()
                 .await?;
+        } else {
+            log::info!("Script directory is up to date.");
         }
 
         Ok(())
@@ -297,9 +352,9 @@ impl Vi5Aux2 {
         let port = 50051;
         let mut path = std::env::var("PATH").unwrap_or_default();
         path.push_str(";C:\\Users\\seven\\.local\\share\\cef");
-        aviutl2::log::info!("Starting vi5-cef server on port {}", port);
+        log::info!("Starting vi5-cef server on port {}", port);
         for p in path.split(';') {
-            aviutl2::log::debug!("PATH entry: {}", p);
+            log::debug!("PATH entry: {}", p);
         }
         // TODO: 実行ファイルのパスを適切に設定する
         let cef_server_path =
@@ -317,7 +372,7 @@ impl Vi5Aux2 {
             .stderr(std::process::Stdio::piped())
             .creation_flags(0x08000000) // CREATE_NO_WINDOW
             .tap(|cmd| {
-                aviutl2::log::info!("Launching vi5-cef server: {cmd:?}");
+                log::info!("Launching vi5-cef server: {cmd:?}");
             })
             .spawn()
             .map_err(|e| anyhow::anyhow!("vi5-cef サーバーの起動に失敗しました: {}", e))?;
@@ -327,7 +382,7 @@ impl Vi5Aux2 {
             let mut stdout_reader = tokio::io::BufReader::new(stdout).lines();
             while let Some(line) = stdout_reader.next_line().await.transpose() {
                 if let Ok(line) = line {
-                    aviutl2::log::debug!("[vi5-cef-server stdout] {}", line);
+                    log::debug!("[vi5-cef-server stdout] {}", line);
                 }
             }
         });
@@ -335,7 +390,7 @@ impl Vi5Aux2 {
             let mut stderr_reader = tokio::io::BufReader::new(stderr).lines();
             while let Some(line) = stderr_reader.next_line().await.transpose() {
                 if let Ok(line) = line {
-                    aviutl2::log::error!("[vi5-cef-server stderr] {}", line);
+                    log::error!("[vi5-cef-server stderr] {}", line);
                 }
             }
         });
@@ -363,10 +418,7 @@ impl Vi5Aux2 {
                         Ok(Some(status)) => Some(status),
                         Ok(None) => None,
                         Err(e) => {
-                            aviutl2::log::error!(
-                                "Failed to wait for vi5-cef server process: {}",
-                                e
-                            );
+                            log::error!("Failed to wait for vi5-cef server process: {}", e);
                             return;
                         }
                     }
@@ -374,13 +426,13 @@ impl Vi5Aux2 {
                 if let Some(status) = status {
                     match status.code() {
                         Some(0) => {
-                            aviutl2::log::info!("vi5-cef server has exited normally.");
+                            log::info!("vi5-cef server has exited normally.");
                         }
                         Some(code) => {
-                            aviutl2::log::error!("vi5-cef server has exited (exit code: {})", code);
+                            log::error!("vi5-cef server has exited (exit code: {})", code);
                         }
                         None => {
-                            aviutl2::log::error!("vi5-cef server has exited (unknown exit code)");
+                            log::error!("vi5-cef server has exited (unknown exit code)");
                         }
                     }
                     return;
@@ -455,18 +507,19 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
     }
 
     fn on_project_load(&mut self, project: &mut aviutl2::generic::ProjectFile) {
-        let mut guard = self.project_dir.blocking_lock();
-        *guard = match project.deserialize::<String>("project_dir") {
+        match project.deserialize::<String>("project_dir") {
             Ok(dir) => {
                 if dir.is_empty() {
-                    None
+                    log::info!("No project directory set in project file.");
                 } else {
-                    Some(dir)
+                    log::info!("Loaded project directory from project file: {}", dir);
+                    if let Err(e) = self.set_project_dir(dir) {
+                        log::error!("Failed to set project directory: {}", e);
+                    }
                 }
             }
             Err(e) => {
-                aviutl2::log::error!("Failed to get project parameter: {}", e);
-                None
+                log::error!("Failed to get project parameter: {}", e);
             }
         }
     }
@@ -477,7 +530,7 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
             "project_dir",
             &self.project_dir.blocking_lock().as_deref().unwrap_or(""),
         ) {
-            aviutl2::log::error!("Failed to set project parameter: {}", e);
+            log::error!("Failed to set project parameter: {}", e);
         }
     }
 }
@@ -485,14 +538,14 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
 impl Drop for Vi5Aux2 {
     fn drop(&mut self) {
         if let Some((child, _client)) = self.server.blocking_lock().take() {
-            aviutl2::log::info!("Shutting down vi5-cef server...");
+            log::info!("Shutting down vi5-cef server...");
             futures::executor::block_on(async {
                 let mut child = child.lock().await;
                 let _ = child.kill().await;
             });
         }
         if let Some(runtime) = self.runtime.write().unwrap().take() {
-            aviutl2::log::info!("Shutting down Tokio runtime...");
+            log::info!("Shutting down Tokio runtime...");
             runtime.shutdown_timeout(std::time::Duration::from_secs(10));
         }
     }
