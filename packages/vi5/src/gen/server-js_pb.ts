@@ -14,19 +14,24 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file server-js.proto.
  */
 export const file_server_js: GenFile = /*@__PURE__*/
-  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzIlQKDkluaXRpYWxpemVJbmZvEhgKEHJlbmRlcmVyX3ZlcnNpb24YASABKAkSKAoMb2JqZWN0X2luZm9zGAIgAygLMhIuY29tbW9uLk9iamVjdEluZm8iSwoUUmVuZGVyZXJlZE9iamVjdEluZm8SCQoBeBgBIAEoBRIJCgF5GAIgASgFEg0KBXdpZHRoGAMgASgFEg4KBmhlaWdodBgEIAEoBSKMAQoUU2luZ2xlUmVuZGVyUmVzcG9uc2USDQoFbm9uY2UYASABKAUSQAoWcmVuZGVyZXJlZF9vYmplY3RfaW5mbxgCIAEoCzIeLnNlcnZlcmpzLlJlbmRlcmVyZWRPYmplY3RJbmZvSAASFwoNZXJyb3JfbWVzc2FnZRgDIAEoCUgAQgoKCHJlc3BvbnNlInAKHU1heWJlSW5jb21wbGV0ZVJlbmRlclJlc3BvbnNlEjgKEHJlbmRlcl9yZXNwb25zZXMYASADKAsyHi5zZXJ2ZXJqcy5TaW5nbGVSZW5kZXJSZXNwb25zZRIVCg1pc19pbmNvbXBsZXRlGAIgASgIYgZwcm90bzM", [file_common]);
+  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzImoKDkluaXRpYWxpemVJbmZvEhQKDHByb2plY3RfbmFtZRgBIAEoCRIYChByZW5kZXJlcl92ZXJzaW9uGAIgASgJEigKDG9iamVjdF9pbmZvcxgDIAMoCzISLmNvbW1vbi5PYmplY3RJbmZvIksKFFJlbmRlcmVyZWRPYmplY3RJbmZvEgkKAXgYASABKAUSCQoBeRgCIAEoBRINCgV3aWR0aBgDIAEoBRIOCgZoZWlnaHQYBCABKAUijAEKFFNpbmdsZVJlbmRlclJlc3BvbnNlEg0KBW5vbmNlGAEgASgFEkAKFnJlbmRlcmVyZWRfb2JqZWN0X2luZm8YAiABKAsyHi5zZXJ2ZXJqcy5SZW5kZXJlcmVkT2JqZWN0SW5mb0gAEhcKDWVycm9yX21lc3NhZ2UYAyABKAlIAEIKCghyZXNwb25zZSJwCh1NYXliZUluY29tcGxldGVSZW5kZXJSZXNwb25zZRI4ChByZW5kZXJfcmVzcG9uc2VzGAEgAygLMh4uc2VydmVyanMuU2luZ2xlUmVuZGVyUmVzcG9uc2USFQoNaXNfaW5jb21wbGV0ZRgCIAEoCGIGcHJvdG8z", [file_common]);
 
 /**
  * @generated from message serverjs.InitializeInfo
  */
 export type InitializeInfo = Message<"serverjs.InitializeInfo"> & {
   /**
-   * @generated from field: string renderer_version = 1;
+   * @generated from field: string project_name = 1;
+   */
+  projectName: string;
+
+  /**
+   * @generated from field: string renderer_version = 2;
    */
   rendererVersion: string;
 
   /**
-   * @generated from field: repeated common.ObjectInfo object_infos = 2;
+   * @generated from field: repeated common.ObjectInfo object_infos = 3;
    */
   objectInfos: ObjectInfo[];
 };

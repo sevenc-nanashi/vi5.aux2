@@ -67,6 +67,7 @@ impl crate::protocol::libserver::lib_server_server::LibServer for MainServer {
             .await
             .map_err(|e| tonic::Status::internal(format!("Initialization failed: {}", e)))?;
         let response = crate::protocol::libserver::InitializeResponse {
+            project_name: response.project_name,
             renderer_version: response.renderer_version,
             object_infos: response.object_infos,
         };

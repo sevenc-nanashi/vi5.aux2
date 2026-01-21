@@ -221,7 +221,7 @@ export class Vi5Runtime {
   readonly ctx: CanvasRenderingContext2D;
   readonly objects = new Map<string, Vi5Object<ParameterDefinitions>>();
 
-  constructor(public readonly root: string) {
+  constructor(public projectName: string) {
     this.canvas = document.getElementById("vi5-canvas") as HTMLCanvasElement;
     this.ctx = this.canvas.getContext("2d")!;
   }
@@ -231,6 +231,7 @@ export class Vi5Runtime {
     this.drawMessage(
       InitializeInfoSchema,
       {
+        projectName: this.projectName,
         rendererVersion: "1.0.0",
         objectInfos: Array.from(this.objects.values()).map(
           (obj): ObjectInfo =>

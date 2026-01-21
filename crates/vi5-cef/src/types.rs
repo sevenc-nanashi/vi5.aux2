@@ -1,5 +1,6 @@
 #[derive(Debug, Clone)]
 pub struct InitializeResponse {
+    pub project_name: String,
     pub renderer_version: String,
     pub object_infos: Vec<ObjectInfo>,
 }

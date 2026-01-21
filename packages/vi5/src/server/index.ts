@@ -3,12 +3,16 @@ import type { Config } from "../config";
 import path from "node:path";
 import { createVi5Plugin } from "./plugin";
 import { getUnusedPort } from "../helpers/port";
+import { createJiti } from "jiti";
+import { consoleForwardPlugin } from "vite-console-forward-plugin";
 
-export function runServer(root: string, port: number) {
+const jiti = createJiti(import.meta.url);
+
+export async function runServer(root: string, port: number) {
   let restartPromise: Promise<void> | undefined;
-  let config: Config;
+  let config: Config = await resolveConfig(root);
   const createDevServer = async (isRestart = true) => {
-    const server = await createServer(root, port, restartServer);
+    const server = await createServer(root, port, config, restartServer);
     function restartServer() {
       if (!restartPromise) {
         restartPromise = (async () => {
@@ -37,11 +41,12 @@ export function runServer(root: string, port: number) {
 async function createServer(
   root: string,
   port: number,
+  config: Config,
   restartServer?: () => Promise<void>,
 ) {
   return createViteServer({
     root,
-    plugins: [createVi5Plugin()],
+    plugins: [createVi5Plugin(config), consoleForwardPlugin()],
     server: {
       port: port || (await getUnusedPort(3000)),
     },
@@ -50,7 +55,8 @@ async function createServer(
 
 async function resolveConfig(root: string): Promise<Config> {
   const configPath = path.resolve(root, "vi5.config.ts");
-  const mod = await import(configPath);
+  const configUrl = new URL(`file://${configPath}`);
+  const mod = await jiti.import<any>(configUrl.href);
   const configExport = mod.default || mod;
   return typeof configExport === "function"
     ? configExport()

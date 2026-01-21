@@ -1,7 +1,8 @@
 import type { UserConfig as ViteConfig } from "vite";
 
 export interface Config {
-  vite: ViteConfig;
+  name: string;
+  vite?: ViteConfig;
 }
 
 type ConfigExport =

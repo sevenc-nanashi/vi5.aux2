@@ -7,9 +7,10 @@ import "common.proto";
 message InitializeRequest { string root_path = 1; }
 
 message InitializeResponse {
-  string renderer_version = 1;
+  string project_name = 1;
+  string renderer_version = 2;
 
-  repeated common.ObjectInfo object_infos = 2;
+  repeated common.ObjectInfo object_infos = 3;
 }
 
 message BatchRenderResponse { repeated RenderResponse render_responses = 1; }

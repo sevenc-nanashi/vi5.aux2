@@ -95,6 +95,7 @@ impl TryFrom<protocol::libserver::InitializeResponse> for InitializeResponse {
             .map(ObjectInfo::try_from)
             .collect::<Result<Vec<_>, _>>()?;
         Ok(Self {
+            project_name: value.project_name,
             renderer_version: value.renderer_version,
             object_infos,
         })
