@@ -1,8 +1,6 @@
-use std::{collections::HashMap, ptr::NonNull};
+use std::collections::HashMap;
 
-use aviutl2::{
-    AnyResult, AviUtl2Info, generic::GenericPlugin, ldbg, module::ScriptModuleFunctions,
-};
+use aviutl2::{AnyResult, AviUtl2Info, generic::GenericPlugin, log, module::ScriptModuleFunctions};
 
 use crate::Vi5Aux2;
 
@@ -66,6 +64,11 @@ impl aviutl2::module::ScriptModule for InternalModule {
 impl InternalModule {
     fn serialize_string(&self, input: String) -> aviutl2::AnyResult<String> {
         Ok(serde_json::to_string(&input)?)
+    }
+    fn serialize_i64(&self, input_low: i32, input_high: i32) -> aviutl2::AnyResult<String> {
+        Ok(serde_json::to_string(
+            &(((input_high as i64) << 32) | (input_low as u32 as i64)),
+        )?)
     }
     fn serialize_number(&self, input: f64) -> aviutl2::AnyResult<String> {
         if input % 1.0 == 0.0 {
@@ -141,25 +144,28 @@ impl InternalModule {
                 })
             })
             .collect::<anyhow::Result<Vec<vi5_cef::Parameter>>>()?;
-        let rendered = Vi5Aux2::with_instance(move |instance| {
-            futures::executor::block_on(instance.with_client(async move |client| {
-                client
-                    .batch_render(vec![vi5_cef::RenderRequest {
-                        object: object_name,
-                        object_id: obj.id as i64,
-                        frame_info: vi5_cef::FrameInfo {
-                            x: obj.x,
-                            y: obj.y,
-                            width: obj.screen_w,
-                            height: obj.screen_h,
-                            current_frame: obj.frame,
-                            total_frames: obj.totalframe,
-                        },
-                        parameters,
-                    }])
-                    .await
-                    .map_err(anyhow::Error::from)
-            }))
+        let rendered = Vi5Aux2::with_instance({
+            let object_name = object_name.clone();
+            move |instance| {
+                futures::executor::block_on(instance.with_client(async move |client| {
+                    client
+                        .batch_render(vec![vi5_cef::RenderRequest {
+                            object: object_name,
+                            object_id: obj.id as i64,
+                            frame_info: vi5_cef::FrameInfo {
+                                x: obj.x,
+                                y: obj.y,
+                                width: obj.screen_w,
+                                height: obj.screen_h,
+                                current_frame: obj.frame,
+                                total_frames: obj.totalframe,
+                            },
+                            parameters,
+                        }])
+                        .await
+                        .map_err(anyhow::Error::from)
+                }))
+            }
         })?;
         // TODO: 複数リクエスト対応
         let response = rendered[0].response.clone();
@@ -173,7 +179,14 @@ impl InternalModule {
                 TEMPORARY_BUFFER
                     .lock()
                     .unwrap()
-                    .insert(obj.id as i64, image_data);
+                    .insert(obj.effect_id as i64, image_data);
+                log::debug!(
+                    "Rendered object '{}' (id: {}) with size {}x{}",
+                    object_name,
+                    obj.effect_id,
+                    w,
+                    h
+                );
                 Ok((ptr, w as usize, h as usize))
             }
             vi5_cef::RenderResponseData::Error(err) => {
@@ -181,8 +194,16 @@ impl InternalModule {
             }
         }
     }
-    // TODO: i64にする
     fn free_image(&self, id: i32) {
-        TEMPORARY_BUFFER.lock().unwrap().remove(&(id as i64));
+        if TEMPORARY_BUFFER
+            .lock()
+            .unwrap()
+            .remove(&(id as i64))
+            .is_some()
+        {
+            log::debug!("Freed image buffer for id {}", id);
+        } else {
+            log::warn!("No image buffer found for id {}", id);
+        }
     }
 }

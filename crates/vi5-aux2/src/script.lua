@@ -58,6 +58,6 @@ local image, w, h = internal.call_object(
   serialized_obj_values
 )
 obj.putpixeldata("object", image, w, h, "rgba")
-internal.free_image(image)
+internal.free_image(obj.effect_id)
 
 -- vim:set ft=lua:
