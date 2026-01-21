@@ -7,12 +7,6 @@ import style from "./server/index.css?raw";
 
 document.head.insertAdjacentHTML("beforeend", `<style>${style}</style>`);
 
-declare global {
-  interface Window {
-    __vi5__: Vi5Runtime;
-  }
-}
-
 vi5Log.info("Vi5 Client Runtime initializing...");
 
 declare const __vi5_data__: {

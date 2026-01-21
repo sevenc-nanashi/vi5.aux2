@@ -7,8 +7,9 @@
   "devDependencies": {
     "@bufbuild/buf": "^1.63.0",
     "@bufbuild/protoc-gen-es": "^2.10.2",
-    "oxfmt": "^0.26.0",
-    "oxlint": "^1.41.0"
+    "@typescript/native-preview": "catalog:lint",
+    "oxfmt": "catalog:lint",
+    "oxlint": "catalog:lint"
   },
   "packageManager": "pnpm@10.28.0"
 }
