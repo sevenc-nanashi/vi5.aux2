@@ -290,7 +290,7 @@ impl Vi5Aux2 {
             .arg("--devtools")
             .env("PATH", path)
             .env("NO_COLOR", "1")
-            // NOTE: vi5-cef-server.exe のあるディレクトリにしないとなぜかlibcef.dllを見つけられずに落ちる
+            // NOTE: C:\Windows\System32 で起動するとなぜかlibcef.dllを見つけられなくて落ちるので、カレントディレクトリを実行ファイルのディレクトリにする
             .current_dir(cef_server_path.parent().unwrap())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
