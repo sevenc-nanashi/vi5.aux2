@@ -11,9 +11,8 @@ import type { Message } from "@bufbuild/protobuf";
 /**
  * Describes the file common.proto.
  */
-export const file_common: GenFile /*@__PURE__*/ = fileDesc(
-  "Cgxjb21tb24ucHJvdG8SBmNvbW1vbiKWAQoNUmVuZGVyUmVxdWVzdBIUCgxyZW5kZXJfbm9uY2UYASABKAUSDgoGb2JqZWN0GAIgASgJEhEKCW9iamVjdF9pZBgDIAEoAxIlCgpmcmFtZV9pbmZvGAQgASgLMhEuY29tbW9uLkZyYW1lSW5mbxIlCgpwYXJhbWV0ZXJzGAUgAygLMhEuY29tbW9uLlBhcmFtZXRlciJtCglGcmFtZUluZm8SCQoBeBgBIAEoBRIJCgF5GAIgASgFEg0KBXdpZHRoGAMgASgFEg4KBmhlaWdodBgEIAEoBRIVCg1jdXJyZW50X2ZyYW1lGAUgASgFEhQKDHRvdGFsX2ZyYW1lcxgGIAEoBSKgAQoJUGFyYW1ldGVyEgsKA2tleRgBIAEoCRITCglzdHJfdmFsdWUYAiABKAlIABIUCgp0ZXh0X3ZhbHVlGAMgASgJSAASFgoMbnVtYmVyX3ZhbHVlGAQgASgBSAASFAoKYm9vbF92YWx1ZRgFIAEoCEgAEiQKC2NvbG9yX3ZhbHVlGAYgASgLMg0uY29tbW9uLkNvbG9ySABCBwoFdmFsdWUiMwoFQ29sb3ISCQoBchgBIAEoARIJCgFnGAIgASgBEgkKAWIYAyABKAESCQoBYRgEIAEoASJjCgpPYmplY3RJbmZvEgoKAmlkGAEgASgJEg0KBWxhYmVsGAIgASgJEjoKFXBhcmFtZXRlcl9kZWZpbml0aW9ucxgDIAMoCzIbLmNvbW1vbi5QYXJhbWV0ZXJEZWZpbml0aW9uIhEKD1BhcmFtZXRlclN0cmluZyIPCg1QYXJhbWV0ZXJUZXh0IhIKEFBhcmFtZXRlckJvb2xlYW4iZwoPUGFyYW1ldGVyTnVtYmVyEiAKBHN0ZXAYASABKA4yEi5jb21tb24uTnVtYmVyU3RlcBIQCgNtaW4YAiABKAFIAIgBARIQCgNtYXgYAyABKAFIAYgBAUIGCgRfbWluQgYKBF9tYXgiEAoOUGFyYW1ldGVyQ29sb3Ii6gEKDVBhcmFtZXRlclR5cGUSKQoGc3RyaW5nGAEgASgLMhcuY29tbW9uLlBhcmFtZXRlclN0cmluZ0gAEiUKBHRleHQYAiABKAsyFS5jb21tb24uUGFyYW1ldGVyVGV4dEgAEisKB2Jvb2xlYW4YAyABKAsyGC5jb21tb24uUGFyYW1ldGVyQm9vbGVhbkgAEikKBm51bWJlchgEIAEoCzIXLmNvbW1vbi5QYXJhbWV0ZXJOdW1iZXJIABInCgVjb2xvchgFIAEoCzIWLmNvbW1vbi5QYXJhbWV0ZXJDb2xvckgAQgYKBGtpbmQigAEKE1BhcmFtZXRlckRlZmluaXRpb24SCwoDa2V5GAEgASgJEiMKBHR5cGUYAiABKAsyFS5jb21tb24uUGFyYW1ldGVyVHlwZRINCgVsYWJlbBgDIAEoCRIoCg1kZWZhdWx0X3ZhbHVlGAQgASgLMhEuY29tbW9uLlBhcmFtZXRlciJEChJCYXRjaFJlbmRlclJlcXVlc3QSLgoPcmVuZGVyX3JlcXVlc3RzGAEgAygLMhUuY29tbW9uLlJlbmRlclJlcXVlc3QqgQEKCk51bWJlclN0ZXASEwoPTlVNQkVSX1NURVBfT05FEAASGQoVTlVNQkVSX1NURVBfUE9JTlRfT05FEAESHgoaTlVNQkVSX1NURVBfUE9JTlRfWkVST19PTkUQAhIjCh9OVU1CRVJfU1RFUF9QT0lOVF9aRVJPX1pFUk9fT05FEANiBnByb3RvMw",
-);
+export const file_common: GenFile = /*@__PURE__*/
+  fileDesc("Cgxjb21tb24ucHJvdG8SBmNvbW1vbiKWAQoNUmVuZGVyUmVxdWVzdBIUCgxyZW5kZXJfbm9uY2UYASABKAUSDgoGb2JqZWN0GAIgASgJEhEKCW9iamVjdF9pZBgDIAEoAxIlCgpmcmFtZV9pbmZvGAQgASgLMhEuY29tbW9uLkZyYW1lSW5mbxIlCgpwYXJhbWV0ZXJzGAUgAygLMhEuY29tbW9uLlBhcmFtZXRlciJtCglGcmFtZUluZm8SCQoBeBgBIAEoBRIJCgF5GAIgASgFEg0KBXdpZHRoGAMgASgFEg4KBmhlaWdodBgEIAEoBRIVCg1jdXJyZW50X2ZyYW1lGAUgASgFEhQKDHRvdGFsX2ZyYW1lcxgGIAEoBSKgAQoJUGFyYW1ldGVyEgsKA2tleRgBIAEoCRITCglzdHJfdmFsdWUYAiABKAlIABIUCgp0ZXh0X3ZhbHVlGAMgASgJSAASFgoMbnVtYmVyX3ZhbHVlGAQgASgBSAASFAoKYm9vbF92YWx1ZRgFIAEoCEgAEiQKC2NvbG9yX3ZhbHVlGAYgASgLMg0uY29tbW9uLkNvbG9ySABCBwoFdmFsdWUiMwoFQ29sb3ISCQoBchgBIAEoARIJCgFnGAIgASgBEgkKAWIYAyABKAESCQoBYRgEIAEoASJjCgpPYmplY3RJbmZvEgoKAmlkGAEgASgJEg0KBWxhYmVsGAIgASgJEjoKFXBhcmFtZXRlcl9kZWZpbml0aW9ucxgDIAMoCzIbLmNvbW1vbi5QYXJhbWV0ZXJEZWZpbml0aW9uIhEKD1BhcmFtZXRlclN0cmluZyIPCg1QYXJhbWV0ZXJUZXh0IhIKEFBhcmFtZXRlckJvb2xlYW4iTQoPUGFyYW1ldGVyTnVtYmVyEiAKBHN0ZXAYASABKA4yEi5jb21tb24uTnVtYmVyU3RlcBILCgNtaW4YAiABKAESCwoDbWF4GAMgASgBIhAKDlBhcmFtZXRlckNvbG9yIuoBCg1QYXJhbWV0ZXJUeXBlEikKBnN0cmluZxgBIAEoCzIXLmNvbW1vbi5QYXJhbWV0ZXJTdHJpbmdIABIlCgR0ZXh0GAIgASgLMhUuY29tbW9uLlBhcmFtZXRlclRleHRIABIrCgdib29sZWFuGAMgASgLMhguY29tbW9uLlBhcmFtZXRlckJvb2xlYW5IABIpCgZudW1iZXIYBCABKAsyFy5jb21tb24uUGFyYW1ldGVyTnVtYmVySAASJwoFY29sb3IYBSABKAsyFi5jb21tb24uUGFyYW1ldGVyQ29sb3JIAEIGCgRraW5kIoABChNQYXJhbWV0ZXJEZWZpbml0aW9uEgsKA2tleRgBIAEoCRIjCgR0eXBlGAIgASgLMhUuY29tbW9uLlBhcmFtZXRlclR5cGUSDQoFbGFiZWwYAyABKAkSKAoNZGVmYXVsdF92YWx1ZRgEIAEoCzIRLmNvbW1vbi5QYXJhbWV0ZXIiRAoSQmF0Y2hSZW5kZXJSZXF1ZXN0Ei4KD3JlbmRlcl9yZXF1ZXN0cxgBIAMoCzIVLmNvbW1vbi5SZW5kZXJSZXF1ZXN0KoEBCgpOdW1iZXJTdGVwEhMKD05VTUJFUl9TVEVQX09ORRAAEhkKFU5VTUJFUl9TVEVQX1BPSU5UX09ORRABEh4KGk5VTUJFUl9TVEVQX1BPSU5UX1pFUk9fT05FEAISIwofTlVNQkVSX1NURVBfUE9JTlRfWkVST19aRVJPX09ORRADYgZwcm90bzM");
 
 /**
  * @generated from message common.RenderRequest
@@ -49,10 +48,8 @@ export type RenderRequest = Message<"common.RenderRequest"> & {
  * Describes the message common.RenderRequest.
  * Use `create(RenderRequestSchema)` to create a new message.
  */
-export const RenderRequestSchema: GenMessage<RenderRequest> /*@__PURE__*/ = messageDesc(
-  file_common,
-  0,
-);
+export const RenderRequestSchema: GenMessage<RenderRequest> = /*@__PURE__*/
+  messageDesc(file_common, 0);
 
 /**
  * @generated from message common.FrameInfo
@@ -93,7 +90,8 @@ export type FrameInfo = Message<"common.FrameInfo"> & {
  * Describes the message common.FrameInfo.
  * Use `create(FrameInfoSchema)` to create a new message.
  */
-export const FrameInfoSchema: GenMessage<FrameInfo> /*@__PURE__*/ = messageDesc(file_common, 1);
+export const FrameInfoSchema: GenMessage<FrameInfo> = /*@__PURE__*/
+  messageDesc(file_common, 1);
 
 /**
  * @generated from message common.Parameter
@@ -107,50 +105,45 @@ export type Parameter = Message<"common.Parameter"> & {
   /**
    * @generated from oneof common.Parameter.value
    */
-  value:
-    | {
-        /**
-         * @generated from field: string str_value = 2;
-         */
-        value: string;
-        case: "strValue";
-      }
-    | {
-        /**
-         * @generated from field: string text_value = 3;
-         */
-        value: string;
-        case: "textValue";
-      }
-    | {
-        /**
-         * @generated from field: double number_value = 4;
-         */
-        value: number;
-        case: "numberValue";
-      }
-    | {
-        /**
-         * @generated from field: bool bool_value = 5;
-         */
-        value: boolean;
-        case: "boolValue";
-      }
-    | {
-        /**
-         * @generated from field: common.Color color_value = 6;
-         */
-        value: Color;
-        case: "colorValue";
-      }
-    | { case: undefined; value?: undefined };
+  value: {
+    /**
+     * @generated from field: string str_value = 2;
+     */
+    value: string;
+    case: "strValue";
+  } | {
+    /**
+     * @generated from field: string text_value = 3;
+     */
+    value: string;
+    case: "textValue";
+  } | {
+    /**
+     * @generated from field: double number_value = 4;
+     */
+    value: number;
+    case: "numberValue";
+  } | {
+    /**
+     * @generated from field: bool bool_value = 5;
+     */
+    value: boolean;
+    case: "boolValue";
+  } | {
+    /**
+     * @generated from field: common.Color color_value = 6;
+     */
+    value: Color;
+    case: "colorValue";
+  } | { case: undefined; value?: undefined };
 };
 
 /**
  * Describes the message common.Parameter.
  * Use `create(ParameterSchema)` to create a new message.
  */
-export const ParameterSchema: GenMessage<Parameter> /*@__PURE__*/ = messageDesc(file_common, 2);
+export const ParameterSchema: GenMessage<Parameter> = /*@__PURE__*/
+  messageDesc(file_common, 2);
 
 /**
  * @generated from message common.Color
@@ -181,7 +174,8 @@ export type Color = Message<"common.Color"> & {
  * Describes the message common.Color.
  * Use `create(ColorSchema)` to create a new message.
  */
-export const ColorSchema: GenMessage<Color> /*@__PURE__*/ = messageDesc(file_common, 3);
+export const ColorSchema: GenMessage<Color> = /*@__PURE__*/
+  messageDesc(file_common, 3);
 
 /**
  * @generated from message common.ObjectInfo
@@ -207,49 +201,47 @@ export type ObjectInfo = Message<"common.ObjectInfo"> & {
  * Describes the message common.ObjectInfo.
  * Use `create(ObjectInfoSchema)` to create a new message.
  */
-export const ObjectInfoSchema: GenMessage<ObjectInfo> /*@__PURE__*/ = messageDesc(file_common, 4);
+export const ObjectInfoSchema: GenMessage<ObjectInfo> = /*@__PURE__*/
+  messageDesc(file_common, 4);
 
 /**
  * @generated from message common.ParameterString
  */
-export type ParameterString = Message<"common.ParameterString"> & {};
+export type ParameterString = Message<"common.ParameterString"> & {
+};
 
 /**
  * Describes the message common.ParameterString.
  * Use `create(ParameterStringSchema)` to create a new message.
  */
-export const ParameterStringSchema: GenMessage<ParameterString> /*@__PURE__*/ = messageDesc(
-  file_common,
-  5,
-);
+export const ParameterStringSchema: GenMessage<ParameterString> = /*@__PURE__*/
+  messageDesc(file_common, 5);
 
 /**
  * @generated from message common.ParameterText
  */
-export type ParameterText = Message<"common.ParameterText"> & {};
+export type ParameterText = Message<"common.ParameterText"> & {
+};
 
 /**
  * Describes the message common.ParameterText.
  * Use `create(ParameterTextSchema)` to create a new message.
  */
-export const ParameterTextSchema: GenMessage<ParameterText> /*@__PURE__*/ = messageDesc(
-  file_common,
-  6,
-);
+export const ParameterTextSchema: GenMessage<ParameterText> = /*@__PURE__*/
+  messageDesc(file_common, 6);
 
 /**
  * @generated from message common.ParameterBoolean
  */
-export type ParameterBoolean = Message<"common.ParameterBoolean"> & {};
+export type ParameterBoolean = Message<"common.ParameterBoolean"> & {
+};
 
 /**
  * Describes the message common.ParameterBoolean.
  * Use `create(ParameterBooleanSchema)` to create a new message.
  */
-export const ParameterBooleanSchema: GenMessage<ParameterBoolean> /*@__PURE__*/ = messageDesc(
-  file_common,
-  7,
-);
+export const ParameterBooleanSchema: GenMessage<ParameterBoolean> = /*@__PURE__*/
+  messageDesc(file_common, 7);
 
 /**
  * @generated from message common.ParameterNumber
@@ -261,38 +253,35 @@ export type ParameterNumber = Message<"common.ParameterNumber"> & {
   step: NumberStep;
 
   /**
-   * @generated from field: optional double min = 2;
+   * @generated from field: double min = 2;
    */
-  min?: number;
+  min: number;
 
   /**
-   * @generated from field: optional double max = 3;
+   * @generated from field: double max = 3;
    */
-  max?: number;
+  max: number;
 };
 
 /**
  * Describes the message common.ParameterNumber.
  * Use `create(ParameterNumberSchema)` to create a new message.
  */
-export const ParameterNumberSchema: GenMessage<ParameterNumber> /*@__PURE__*/ = messageDesc(
-  file_common,
-  8,
-);
+export const ParameterNumberSchema: GenMessage<ParameterNumber> = /*@__PURE__*/
+  messageDesc(file_common, 8);
 
 /**
  * @generated from message common.ParameterColor
  */
-export type ParameterColor = Message<"common.ParameterColor"> & {};
+export type ParameterColor = Message<"common.ParameterColor"> & {
+};
 
 /**
  * Describes the message common.ParameterColor.
  * Use `create(ParameterColorSchema)` to create a new message.
  */
-export const ParameterColorSchema: GenMessage<ParameterColor> /*@__PURE__*/ = messageDesc(
-  file_common,
-  9,
-);
+export const ParameterColorSchema: GenMessage<ParameterColor> = /*@__PURE__*/
+  messageDesc(file_common, 9);
 
 /**
  * @generated from message common.ParameterType
@@ -301,53 +290,45 @@ export type ParameterType = Message<"common.ParameterType"> & {
   /**
    * @generated from oneof common.ParameterType.kind
    */
-  kind:
-    | {
-        /**
-         * @generated from field: common.ParameterString string = 1;
-         */
-        value: ParameterString;
-        case: "string";
-      }
-    | {
-        /**
-         * @generated from field: common.ParameterText text = 2;
-         */
-        value: ParameterText;
-        case: "text";
-      }
-    | {
-        /**
-         * @generated from field: common.ParameterBoolean boolean = 3;
-         */
-        value: ParameterBoolean;
-        case: "boolean";
-      }
-    | {
-        /**
-         * @generated from field: common.ParameterNumber number = 4;
-         */
-        value: ParameterNumber;
-        case: "number";
-      }
-    | {
-        /**
-         * @generated from field: common.ParameterColor color = 5;
-         */
-        value: ParameterColor;
-        case: "color";
-      }
-    | { case: undefined; value?: undefined };
+  kind: {
+    /**
+     * @generated from field: common.ParameterString string = 1;
+     */
+    value: ParameterString;
+    case: "string";
+  } | {
+    /**
+     * @generated from field: common.ParameterText text = 2;
+     */
+    value: ParameterText;
+    case: "text";
+  } | {
+    /**
+     * @generated from field: common.ParameterBoolean boolean = 3;
+     */
+    value: ParameterBoolean;
+    case: "boolean";
+  } | {
+    /**
+     * @generated from field: common.ParameterNumber number = 4;
+     */
+    value: ParameterNumber;
+    case: "number";
+  } | {
+    /**
+     * @generated from field: common.ParameterColor color = 5;
+     */
+    value: ParameterColor;
+    case: "color";
+  } | { case: undefined; value?: undefined };
 };
 
 /**
  * Describes the message common.ParameterType.
  * Use `create(ParameterTypeSchema)` to create a new message.
  */
-export const ParameterTypeSchema: GenMessage<ParameterType> /*@__PURE__*/ = messageDesc(
-  file_common,
-  10,
-);
+export const ParameterTypeSchema: GenMessage<ParameterType> = /*@__PURE__*/
+  messageDesc(file_common, 10);
 
 /**
  * @generated from message common.ParameterDefinition
@@ -378,10 +359,8 @@ export type ParameterDefinition = Message<"common.ParameterDefinition"> & {
  * Describes the message common.ParameterDefinition.
  * Use `create(ParameterDefinitionSchema)` to create a new message.
  */
-export const ParameterDefinitionSchema: GenMessage<ParameterDefinition> /*@__PURE__*/ = messageDesc(
-  file_common,
-  11,
-);
+export const ParameterDefinitionSchema: GenMessage<ParameterDefinition> = /*@__PURE__*/
+  messageDesc(file_common, 11);
 
 /**
  * @generated from message common.BatchRenderRequest
@@ -397,10 +376,8 @@ export type BatchRenderRequest = Message<"common.BatchRenderRequest"> & {
  * Describes the message common.BatchRenderRequest.
  * Use `create(BatchRenderRequestSchema)` to create a new message.
  */
-export const BatchRenderRequestSchema: GenMessage<BatchRenderRequest> /*@__PURE__*/ = messageDesc(
-  file_common,
-  12,
-);
+export const BatchRenderRequestSchema: GenMessage<BatchRenderRequest> = /*@__PURE__*/
+  messageDesc(file_common, 12);
 
 /**
  * @generated from enum common.NumberStep
@@ -430,4 +407,6 @@ export enum NumberStep {
 /**
  * Describes the enum common.NumberStep.
  */
-export const NumberStepSchema: GenEnum<NumberStep> /*@__PURE__*/ = enumDesc(file_common, 0);
+export const NumberStepSchema: GenEnum<NumberStep> = /*@__PURE__*/
+  enumDesc(file_common, 0);
+

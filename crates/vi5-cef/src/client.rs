@@ -28,15 +28,22 @@ impl Client {
         timeout: std::time::Duration,
     ) -> Result<Self, tonic::transport::Error>
     where
-        D: TryInto<tonic::transport::Endpoint>,
+        D: TryInto<tonic::transport::Endpoint> + Clone,
         D::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
     {
-        let endpoint = tonic::transport::Endpoint::new(dst)?.timeout(timeout);
-        let inner = LibServerClient::connect(endpoint).await?;
-        Ok(Self {
-            inner,
-            next_nonce: 1,
-        })
+        let start = std::time::Instant::now();
+        loop {
+            match Self::connect(dst.clone()).await {
+                Ok(client) => return Ok(client),
+                Err(e) => {
+                    if start.elapsed() >= timeout {
+                        return Err(e);
+                    }
+                    tracing::warn!("Failed to connect to server: {}. Retrying...", e);
+                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                }
+            }
+        }
     }
 
     pub async fn initialize(

@@ -23,7 +23,7 @@ export default defineObject({
     return ctx.createCanvas(200, 200, p5.P2D);
   },
   draw(ctx, params) {
-    ctx.p.background(100);
+    ctx.p.background(200);
     ctx.p.fill(...colorToP5Tuple(params.color));
     ctx.p.ellipse(100, 100, params.radius, params.radius);
   },

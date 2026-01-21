@@ -21,7 +21,7 @@ export type JsRenderResponse =
     };
 
 const bytesPerPixel = 3;
-const messageHeaderBytes = 8;
+const messageHeaderBytes = 11;
 
 const buildErrorResponse = (nonce: number, error: string): SingleRenderResponse =>
   protobuf.create(SingleRenderResponseSchema, {

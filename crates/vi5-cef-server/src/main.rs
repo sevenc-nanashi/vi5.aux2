@@ -73,7 +73,7 @@ fn main() -> anyhow::Result<()> {
     let mut client = create_client(
         &options,
         gpu,
-        crate::render_loop::on_paint,
+        crate::render_loop::on_software_paint,
         crate::render_loop::on_accelerated_paint,
     );
     let browser = create_browser(&mut client, cli_args.hardware_acceleration)?;

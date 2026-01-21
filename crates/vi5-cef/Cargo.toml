@@ -8,6 +8,8 @@ prost = "0.14.3"
 tonic = { version = "0.14.2", features = ["transport"] }
 thiserror = "2.0.16"
 tonic-prost = "0.14.2"
+tokio = { version = "1.49.0", features = ["time"] }
+tracing = "0.1.44"
 
 [build-dependencies]
 tonic-prost-build = "0.14.2"

@@ -154,8 +154,15 @@ impl TryFrom<protocol::common::ParameterType> for ParameterType {
             protocol::common::parameter_type::Kind::Text(_) => Ok(Self::Text),
             protocol::common::parameter_type::Kind::Boolean(_) => Ok(Self::Boolean),
             protocol::common::parameter_type::Kind::Number(number) => {
-                let step = NumberStep::try_from(number.step)
-                    .map_err(|_| ConversionError::InvalidNumberStep(number.step))?;
+                let step = match number.step {
+                    0 => NumberStep::One,
+                    1 => NumberStep::PointOne,
+                    2 => NumberStep::PointZeroOne,
+                    3 => NumberStep::PointZeroZeroOne,
+                    _ => {
+                        return Err(ConversionError::InvalidNumberStep(number.step));
+                    }
+                };
                 Ok(Self::Number {
                     step,
                     min: number.min,
@@ -172,9 +179,7 @@ impl TryFrom<protocol::common::Parameter> for Parameter {
 
     fn try_from(value: protocol::common::Parameter) -> Result<Self, Self::Error> {
         let key = value.key;
-        let value = value
-            .value
-            .ok_or(ConversionError::MissingParameterValue)?;
+        let value = value.value.ok_or(ConversionError::MissingParameterValue)?;
         Ok(Self {
             key,
             value: ParameterValue::try_from(value)?,
@@ -191,7 +196,9 @@ impl TryFrom<protocol::common::parameter::Value> for ParameterValue {
             protocol::common::parameter::Value::TextValue(value) => Self::Text(value),
             protocol::common::parameter::Value::NumberValue(value) => Self::Number(value),
             protocol::common::parameter::Value::BoolValue(value) => Self::Bool(value),
-            protocol::common::parameter::Value::ColorValue(value) => Self::Color(Color::from(value)),
+            protocol::common::parameter::Value::ColorValue(value) => {
+                Self::Color(Color::from(value))
+            }
         })
     }
 }
@@ -232,5 +239,3 @@ impl TryFrom<protocol::libserver::RenderResponse> for RenderResponse {
         })
     }
 }
-
-

@@ -35,55 +35,58 @@ fn maybe_temporary_save_buffer(
         });
         png.save(&filename)
             .expect("Failed to save paint buffer as PNG");
+        tracing::info!("Saved paint buffer to {}", filename);
     }
 }
 
-pub fn on_paint(buffer: &[u8], width: usize, height: usize) {
-    if buffer[3] == 0 {
-        tracing::warn!("Received empty paint buffer");
+fn on_paint(buffer: &[u8], width: usize, height: usize, bytes_per_row: usize) {
+    let is_bgra = if buffer[0..4] == [255, 192, 128, 255] {
+        tracing::debug!("RGBA format detected in paint buffer");
+        false
+    } else if buffer[0..4] == [128, 192, 255, 255] {
+        tracing::debug!("BGRA format detected in paint buffer");
+        true
+    } else {
+        tracing::warn!(
+            "Header format not recognized in paint buffer, first 16 bytes: {:?}",
+            &buffer[0..16.min(buffer.len())]
+        );
+        maybe_temporary_save_buffer(buffer, width, height, bytes_per_row, 0);
         return;
-    }
+    };
     tracing::trace!(
         "First 20 bytes of buffer: {:?}",
         &buffer[..20.min(buffer.len())]
     );
-    let nonce = u32::from_le_bytes([buffer[0], buffer[1], buffer[2], buffer[4]]);
-    if let Some(mut callback) = PAINT_CALLBACKS.get_mut(&nonce) {
-        match callback(buffer, width, height) {
-            std::ops::ControlFlow::Break(()) => {
-                drop(callback);
-                PAINT_CALLBACKS.remove(&nonce);
-            }
-            std::ops::ControlFlow::Continue(()) => {}
-        }
-    } else {
-        tracing::warn!("No paint callback found for nonce {}", nonce);
-        maybe_temporary_save_buffer(buffer, width, height, width * 4, nonce);
-    }
-}
-pub fn on_accelerated_paint(
-    buffer: &wgpu::BufferView,
-    width: usize,
-    height: usize,
-    bytes_per_row: usize,
-) {
-    if buffer[3] != 255 {
-        tracing::warn!("Unexpected alpha value: {}", buffer[3]);
-        return;
-    }
-    tracing::trace!(
-        "First 20 bytes of accelerated buffer: {:?}",
-        &buffer[..20.min(buffer.len())]
-    );
     let buffer = buffer.as_ref();
-    let nonce = u32::from_le_bytes([buffer[0], buffer[1], buffer[2], buffer[4]]);
+    // パフォーマンスのために、バッファのフルコピーはnonceがちゃんとしていた場合にのみ行う
+    let nonce = u32::from_le_bytes(if is_bgra {
+        [buffer[6], buffer[5], buffer[4], buffer[10]]
+    } else {
+        [buffer[4], buffer[5], buffer[6], buffer[8]]
+    });
     if let Some(mut callback) = PAINT_CALLBACKS.get_mut(&nonce) {
         let mut slice = vec![0u8; width * height * 4];
-        for y in 0..height {
-            let src_start = y * bytes_per_row;
-            let dst_start = y * width * 4;
-            slice[dst_start..dst_start + width * 4]
-                .copy_from_slice(&buffer[src_start..src_start + width * 4]);
+        if is_bgra {
+            for y in 0..height {
+                let src_start = y * bytes_per_row;
+                let dst_start = y * width * 4;
+                for x in 0..width {
+                    let src_index = src_start + x * 4;
+                    let dst_index = dst_start + x * 4;
+                    slice[dst_index] = buffer[src_index + 2];
+                    slice[dst_index + 1] = buffer[src_index + 1];
+                    slice[dst_index + 2] = buffer[src_index];
+                    slice[dst_index + 3] = buffer[src_index + 3];
+                }
+            }
+        } else {
+            for y in 0..height {
+                let src_start = y * bytes_per_row;
+                let dst_start = y * width * 4;
+                slice[dst_start..dst_start + width * 4]
+                    .copy_from_slice(&buffer[src_start..src_start + width * 4]);
+            }
         }
         match callback(&slice, width, height) {
             std::ops::ControlFlow::Break(()) => {
@@ -98,9 +101,24 @@ pub fn on_accelerated_paint(
     }
 }
 
+pub fn on_software_paint(buffer: &[u8], width: usize, height: usize) {
+    tracing::debug!("Software paint received: {}x{}", width, height);
+    on_paint(buffer, width, height, width * 4);
+}
+pub fn on_accelerated_paint(
+    buffer: &wgpu::BufferView,
+    width: usize,
+    height: usize,
+    bytes_per_row: usize,
+) {
+    tracing::debug!("Accelerated paint received: {}x{}", width, height);
+    on_paint(buffer, width, height, bytes_per_row);
+}
+
 pub struct RenderLoop {
     browser: cef::Browser,
-    initialized: Arc<std::sync::Mutex<Option<anyhow::Result<crate::protocol::serverjs::InitializeInfo>>>>,
+    initialized:
+        Arc<std::sync::Mutex<Option<anyhow::Result<crate::protocol::serverjs::InitializeInfo>>>>,
 }
 
 impl RenderLoop {
@@ -321,11 +339,14 @@ impl RenderLoop {
 }
 
 fn read_message_from_image<T: Message + Default>(buffer: &[u8]) -> anyhow::Result<T> {
-    // N1 N2 N3 A N4 L1 L2 A L3 L4 Message Bytes...
+    // H1 H2 H3 A_ N1 N2 N3 A_ N4 L1 L2 A_ L3 L4 M1 A_ M2 M3 M4 A_ M5 ...
+    // H: header bytes
     // N: nonce bytes
     // A: alpha byte (ignored)
     // L: length bytes (little-endian u32)
-    let message_length = u32::from_le_bytes([buffer[5], buffer[6], buffer[8], buffer[9]]) as usize;
+    // M: message bytes
+    let message_length =
+        u32::from_le_bytes([buffer[9], buffer[10], buffer[12], buffer[13]]) as usize;
     tracing::debug!("Decoding message of length {}", message_length);
     tracing::debug!(
         "First 20 bytes of buffer: {:?}",
@@ -334,7 +355,7 @@ fn read_message_from_image<T: Message + Default>(buffer: &[u8]) -> anyhow::Resul
     let mut message_buffer = vec![0u8; message_length];
     #[expect(clippy::needless_range_loop)]
     for i in 0..message_length {
-        let message_byte_index = 8 + i;
+        let message_byte_index = 11 + i;
         message_buffer[i] = buffer[4 * (message_byte_index / 3) + (message_byte_index % 3)];
     }
     let message = T::decode(&message_buffer[..])?;

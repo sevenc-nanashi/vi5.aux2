@@ -48,6 +48,21 @@ pub fn build_settings() -> Settings {
         no_sandbox: 1,
         windowless_rendering_enabled: 1,
         external_message_pump: 1,
+        cache_path: CefString::from(
+            dirs::cache_dir()
+                .unwrap_or_default()
+                .join("vi5_cef_cache")
+                .to_string_lossy()
+                .to_string()
+                .as_str(),
+        ),
+        resources_dir_path: CefString::from(
+            std::env::current_exe()
+                .ok()
+                .and_then(|p| p.parent().map(|pp| pp.to_string_lossy().to_string()))
+                .unwrap_or_default()
+                .as_str(),
+        ),
 
         ..Default::default()
     };

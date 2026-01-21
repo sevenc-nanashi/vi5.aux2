@@ -58,8 +58,8 @@ enum NumberStep {
 
 message ParameterNumber {
   NumberStep step = 1;
-  optional double min = 2;
-  optional double max = 3;
+  double min = 2;
+  double max = 3;
 }
 message ParameterColor {}
 

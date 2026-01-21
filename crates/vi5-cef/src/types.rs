@@ -65,8 +65,8 @@ pub enum ParameterType {
     Boolean,
     Number {
         step: NumberStep,
-        min: Option<f64>,
-        max: Option<f64>,
+        min: f64,
+        max: f64,
     },
     Color,
 }
@@ -127,4 +127,3 @@ pub enum RenderResponseData {
     },
     Error(String),
 }
-

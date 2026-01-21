@@ -114,7 +114,9 @@ function grpcParamsToJsParams<T extends ParameterDefinitions>(
   return params as InferParameters<T>;
 }
 
-function toGrpcParameterType(definition: ParameterDefinitions[string]): GrpcParameterType {
+function toGrpcParameterType(
+  definition: ParameterDefinitions[string],
+): GrpcParameterType {
   switch (definition.type) {
     case "string":
       return protobuf.create(ParameterTypeSchema, {
@@ -236,8 +238,8 @@ export class Vi5Runtime {
             protobuf.create(ObjectInfoSchema, {
               id: obj.id,
               label: obj.label,
-              parameterDefinitions: Object.entries(obj.parameters).map(([key, def]) =>
-                toGrpcParameterDefinition(key, def),
+              parameterDefinitions: Object.entries(obj.parameters).map(
+                ([key, def]) => toGrpcParameterDefinition(key, def),
               ),
             }),
         ),
@@ -259,18 +261,20 @@ export class Vi5Runtime {
     const data = await fastBase64.toBytes(dataB64);
     const renderPayload = protobuf.fromBinary(BatchRenderRequestSchema, data);
     const jsResponses = await Promise.all(
-      renderPayload.renderRequests.map(async (req): Promise<JsRenderResponse> => {
-        try {
-          return await this.doRender(req);
-        } catch (e) {
-          runtimeLog.error`Error during rendering object ${req.object}: ${e}`;
-          return {
-            type: "error",
-            renderNonce: req.renderNonce,
-            error: `Error during rendering: ${e}`,
-          };
-        }
-      }),
+      renderPayload.renderRequests.map(
+        async (req): Promise<JsRenderResponse> => {
+          try {
+            return await this.doRender(req);
+          } catch (e) {
+            runtimeLog.error`Error during rendering object ${req.object}: ${e}`;
+            return {
+              type: "error",
+              renderNonce: req.renderNonce,
+              error: `Error during rendering: ${e}`,
+            };
+          }
+        },
+      ),
     );
     const canvases = new Map<number, HTMLCanvasElement>();
     for (const resp of jsResponses) {
@@ -298,7 +302,11 @@ export class Vi5Runtime {
           runtimeLog.debug`Rendered object ${renderResponse.nonce} at (${info.x}, ${info.y}) with size ${info.width}x${info.height}`;
         }
       }
-      this.drawMessage(MaybeIncompleteRenderResponseSchema, packedResponse, nonce);
+      this.drawMessage(
+        MaybeIncompleteRenderResponseSchema,
+        packedResponse,
+        nonce,
+      );
     }
     // this.drawMessage(
     //   MaybeIncompleteRenderResponseSchema,
@@ -351,6 +359,9 @@ export class Vi5Runtime {
     );
     const binaryLength = message.length;
     const payload = [
+      255,
+      192,
+      128,
       nonce & 0xff,
       (nonce >> 8) & 0xff,
       (nonce >> 16) & 0xff,

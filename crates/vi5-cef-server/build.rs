@@ -1,4 +1,7 @@
 fn main() -> anyhow::Result<()> {
+    println!("cargo:rerun-if-changed=../../protocol/lib-server.proto");
+    println!("cargo:rerun-if-changed=../../protocol/common.proto");
+    println!("cargo:rerun-if-changed=../../protocol/server-js.proto");
     tonic_prost_build::configure()
         .build_server(true)
         .file_descriptor_set_path(
