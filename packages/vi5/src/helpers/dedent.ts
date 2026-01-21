@@ -13,9 +13,7 @@ export function dedent(string: string): string {
   }
   if (minIndent !== null && minIndent > 0) {
     return lines
-      .map((line) =>
-        line.startsWith(" ".repeat(minIndent)) ? line.slice(minIndent) : line,
-      )
+      .map((line) => (line.startsWith(" ".repeat(minIndent)) ? line.slice(minIndent) : line))
       .join("\n");
   }
   return string;

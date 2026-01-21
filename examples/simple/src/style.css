@@ -6,6 +6,7 @@ canvas:not(#canvas) {
   display: none;
 }
 
-body, html {
+body,
+html {
   background: transparent;
 }

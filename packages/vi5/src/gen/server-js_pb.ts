@@ -13,8 +13,10 @@ import type { Message } from "@bufbuild/protobuf";
 /**
  * Describes the file server-js.proto.
  */
-export const file_server_js: GenFile = /*@__PURE__*/
-  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzImoKDkluaXRpYWxpemVJbmZvEhQKDHByb2plY3RfbmFtZRgBIAEoCRIYChByZW5kZXJlcl92ZXJzaW9uGAIgASgJEigKDG9iamVjdF9pbmZvcxgDIAMoCzISLmNvbW1vbi5PYmplY3RJbmZvIksKFFJlbmRlcmVyZWRPYmplY3RJbmZvEgkKAXgYASABKAUSCQoBeRgCIAEoBRINCgV3aWR0aBgDIAEoBRIOCgZoZWlnaHQYBCABKAUijAEKFFNpbmdsZVJlbmRlclJlc3BvbnNlEg0KBW5vbmNlGAEgASgFEkAKFnJlbmRlcmVyZWRfb2JqZWN0X2luZm8YAiABKAsyHi5zZXJ2ZXJqcy5SZW5kZXJlcmVkT2JqZWN0SW5mb0gAEhcKDWVycm9yX21lc3NhZ2UYAyABKAlIAEIKCghyZXNwb25zZSJwCh1NYXliZUluY29tcGxldGVSZW5kZXJSZXNwb25zZRI4ChByZW5kZXJfcmVzcG9uc2VzGAEgAygLMh4uc2VydmVyanMuU2luZ2xlUmVuZGVyUmVzcG9uc2USFQoNaXNfaW5jb21wbGV0ZRgCIAEoCGIGcHJvdG8z", [file_common]);
+export const file_server_js: GenFile /*@__PURE__*/ = fileDesc(
+  "Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzImoKDkluaXRpYWxpemVJbmZvEhQKDHByb2plY3RfbmFtZRgBIAEoCRIYChByZW5kZXJlcl92ZXJzaW9uGAIgASgJEigKDG9iamVjdF9pbmZvcxgDIAMoCzISLmNvbW1vbi5PYmplY3RJbmZvIksKFFJlbmRlcmVyZWRPYmplY3RJbmZvEgkKAXgYASABKAUSCQoBeRgCIAEoBRINCgV3aWR0aBgDIAEoBRIOCgZoZWlnaHQYBCABKAUijAEKFFNpbmdsZVJlbmRlclJlc3BvbnNlEg0KBW5vbmNlGAEgASgFEkAKFnJlbmRlcmVyZWRfb2JqZWN0X2luZm8YAiABKAsyHi5zZXJ2ZXJqcy5SZW5kZXJlcmVkT2JqZWN0SW5mb0gAEhcKDWVycm9yX21lc3NhZ2UYAyABKAlIAEIKCghyZXNwb25zZSJwCh1NYXliZUluY29tcGxldGVSZW5kZXJSZXNwb25zZRI4ChByZW5kZXJfcmVzcG9uc2VzGAEgAygLMh4uc2VydmVyanMuU2luZ2xlUmVuZGVyUmVzcG9uc2USFQoNaXNfaW5jb21wbGV0ZRgCIAEoCGIGcHJvdG8z",
+  [file_common],
+);
 
 /**
  * @generated from message serverjs.InitializeInfo
@@ -40,8 +42,10 @@ export type InitializeInfo = Message<"serverjs.InitializeInfo"> & {
  * Describes the message serverjs.InitializeInfo.
  * Use `create(InitializeInfoSchema)` to create a new message.
  */
-export const InitializeInfoSchema: GenMessage<InitializeInfo> = /*@__PURE__*/
-  messageDesc(file_server_js, 0);
+export const InitializeInfoSchema: GenMessage<InitializeInfo> /*@__PURE__*/ = messageDesc(
+  file_server_js,
+  0,
+);
 
 /**
  * @generated from message serverjs.RendereredObjectInfo
@@ -72,7 +76,7 @@ export type RendereredObjectInfo = Message<"serverjs.RendereredObjectInfo"> & {
  * Describes the message serverjs.RendereredObjectInfo.
  * Use `create(RendereredObjectInfoSchema)` to create a new message.
  */
-export const RendereredObjectInfoSchema: GenMessage<RendereredObjectInfo> = /*@__PURE__*/
+export const RendereredObjectInfoSchema: GenMessage<RendereredObjectInfo> /*@__PURE__*/ =
   messageDesc(file_server_js, 1);
 
 /**
@@ -87,26 +91,29 @@ export type SingleRenderResponse = Message<"serverjs.SingleRenderResponse"> & {
   /**
    * @generated from oneof serverjs.SingleRenderResponse.response
    */
-  response: {
-    /**
-     * @generated from field: serverjs.RendereredObjectInfo renderered_object_info = 2;
-     */
-    value: RendereredObjectInfo;
-    case: "rendereredObjectInfo";
-  } | {
-    /**
-     * @generated from field: string error_message = 3;
-     */
-    value: string;
-    case: "errorMessage";
-  } | { case: undefined; value?: undefined };
+  response:
+    | {
+        /**
+         * @generated from field: serverjs.RendereredObjectInfo renderered_object_info = 2;
+         */
+        value: RendereredObjectInfo;
+        case: "rendereredObjectInfo";
+      }
+    | {
+        /**
+         * @generated from field: string error_message = 3;
+         */
+        value: string;
+        case: "errorMessage";
+      }
+    | { case: undefined; value?: undefined };
 };
 
 /**
  * Describes the message serverjs.SingleRenderResponse.
  * Use `create(SingleRenderResponseSchema)` to create a new message.
  */
-export const SingleRenderResponseSchema: GenMessage<SingleRenderResponse> = /*@__PURE__*/
+export const SingleRenderResponseSchema: GenMessage<SingleRenderResponse> /*@__PURE__*/ =
   messageDesc(file_server_js, 2);
 
 /**
@@ -128,6 +135,5 @@ export type MaybeIncompleteRenderResponse = Message<"serverjs.MaybeIncompleteRen
  * Describes the message serverjs.MaybeIncompleteRenderResponse.
  * Use `create(MaybeIncompleteRenderResponseSchema)` to create a new message.
  */
-export const MaybeIncompleteRenderResponseSchema: GenMessage<MaybeIncompleteRenderResponse> = /*@__PURE__*/
+export const MaybeIncompleteRenderResponseSchema: GenMessage<MaybeIncompleteRenderResponse> /*@__PURE__*/ =
   messageDesc(file_server_js, 3);
-

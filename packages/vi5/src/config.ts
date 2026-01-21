@@ -5,11 +5,7 @@ export interface Config {
   vite?: ViteConfig;
 }
 
-type ConfigExport =
-  | Config
-  | (() => Config)
-  | Promise<Config>
-  | (() => Promise<Config>);
+type ConfigExport = Config | (() => Config) | Promise<Config> | (() => Promise<Config>);
 
 export function defineConfig(config: ConfigExport): ConfigExport {
   return config;

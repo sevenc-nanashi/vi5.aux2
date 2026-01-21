@@ -17,18 +17,17 @@ export type Color = {
   a: 0 | 1;
 };
 
-export type ParameterType<T extends keyof typeof parameterTypes> =
-  T extends "string"
+export type ParameterType<T extends keyof typeof parameterTypes> = T extends "string"
+  ? string
+  : T extends "text"
     ? string
-    : T extends "text"
-      ? string
-      : T extends "number"
-        ? number
-        : T extends "boolean"
-          ? boolean
-          : T extends "color"
-            ? Color
-            : never;
+    : T extends "number"
+      ? number
+      : T extends "boolean"
+        ? boolean
+        : T extends "color"
+          ? Color
+          : never;
 
 export const numberStep = {
   "1": NumberStep.ONE,
@@ -37,39 +36,32 @@ export const numberStep = {
   "0.001": NumberStep.POINT_ZERO_ZERO_ONE,
 } as const;
 
-type ParameterDefinition<T extends keyof typeof parameterTypes> =
-  T extends "number"
-    ? {
-        type: T;
-        label: string;
-        default: ParameterType<T>;
-        step: NumberStep;
-        min: number;
-        max: number;
-      }
-    : {
-        type: T;
-        label: string;
-        default: ParameterType<T>;
-      };
+type ParameterDefinition<T extends keyof typeof parameterTypes> = T extends "number"
+  ? {
+      type: T;
+      label: string;
+      default: ParameterType<T>;
+      step: NumberStep;
+      min: number;
+      max: number;
+    }
+  : {
+      type: T;
+      label: string;
+      default: ParameterType<T>;
+    };
 export type InferParameters<
   T extends Record<string, ParameterDefinition<keyof typeof parameterTypes>>,
 > = {
   [K in keyof T]: ParameterType<T[K]["type"]>;
 };
 
-export type ParameterDefinitions = Record<
-  string,
-  ParameterDefinition<keyof typeof parameterTypes>
->;
+export type ParameterDefinitions = Record<string, ParameterDefinition<keyof typeof parameterTypes>>;
 export type Vi5Object<T extends ParameterDefinitions> = {
   id: string;
   label: string;
 
   parameters: T;
-  setup: (
-    ctx: Vi5Context,
-    params: InferParameters<T>,
-  ) => Promise<p5.Renderer> | p5.Renderer;
+  setup: (ctx: Vi5Context, params: InferParameters<T>) => Promise<p5.Renderer> | p5.Renderer;
   draw: (ctx: Vi5Context, params: InferParameters<T>) => void;
 };

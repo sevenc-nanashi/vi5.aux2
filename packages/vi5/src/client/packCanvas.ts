@@ -23,10 +23,7 @@ export type JsRenderResponse =
 const bytesPerPixel = 3;
 const messageHeaderBytes = 8;
 
-const buildErrorResponse = (
-  nonce: number,
-  error: string,
-): SingleRenderResponse =>
+const buildErrorResponse = (nonce: number, error: string): SingleRenderResponse =>
   protobuf.create(SingleRenderResponseSchema, {
     nonce,
     response: {
@@ -95,9 +92,7 @@ const packBatch = (
   while (index < responses.length) {
     const response = responses[index]!;
     if (response.type === "error") {
-      renderResponses.push(
-        buildErrorResponse(response.renderNonce, response.error),
-      );
+      renderResponses.push(buildErrorResponse(response.renderNonce, response.error));
       index += 1;
       continue;
     }
@@ -109,10 +104,7 @@ const packBatch = (
       height > Vi5Runtime.get().canvas.height - metadataRows
     ) {
       renderResponses.push(
-        buildErrorResponse(
-          response.renderNonce,
-          "canvas size exceeds pack area",
-        ),
+        buildErrorResponse(response.renderNonce, "canvas size exceeds pack area"),
       );
       continue;
     }
@@ -126,18 +118,13 @@ const packBatch = (
     if (y + height > Vi5Runtime.get().canvas.height) {
       if (renderResponses.length === 0) {
         renderResponses.push(
-          buildErrorResponse(
-            response.renderNonce,
-            "canvas size exceeds pack area",
-          ),
+          buildErrorResponse(response.renderNonce, "canvas size exceeds pack area"),
         );
       }
       break;
     }
 
-    renderResponses.push(
-      buildSuccessResponse(response.renderNonce, x, y, width, height),
-    );
+    renderResponses.push(buildSuccessResponse(response.renderNonce, x, y, width, height));
     packedCanvases.push({
       canvas: response.canvas,
       x,
@@ -157,9 +144,7 @@ const packBatch = (
   };
 };
 
-export function packCanvases(
-  responses: JsRenderResponse[],
-): MaybeIncompleteRenderResponse[] {
+export function packCanvases(responses: JsRenderResponse[]): MaybeIncompleteRenderResponse[] {
   const batches: MaybeIncompleteRenderResponse[] = [];
   let startIndex = 0;
 

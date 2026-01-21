@@ -1,19 +1,19 @@
 {
   "name": "examples-simple",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
+  "dependencies": {
+    "p5": "^2.2.0"
+  },
   "devDependencies": {
     "typescript": "~5.9.3",
     "vi5": "workspace:*",
     "vite": "^7.2.4"
-  },
-  "dependencies": {
-    "p5": "^2.2.0"
   }
 }

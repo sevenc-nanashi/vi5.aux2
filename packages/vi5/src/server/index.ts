@@ -42,11 +42,11 @@ async function createServer(
   root: string,
   port: number,
   config: Config,
-  restartServer?: () => Promise<void>,
+  restartServer: () => Promise<void>,
 ) {
   return createViteServer({
     root,
-    plugins: [createVi5Plugin(config), consoleForwardPlugin()],
+    plugins: [createVi5Plugin(config, restartServer), consoleForwardPlugin()],
     server: {
       port: port || (await getUnusedPort(3000)),
     },
@@ -58,7 +58,5 @@ async function resolveConfig(root: string): Promise<Config> {
   const configUrl = new URL(`file://${configPath}`);
   const mod = await jiti.import<any>(configUrl.href);
   const configExport = mod.default || mod;
-  return typeof configExport === "function"
-    ? configExport()
-    : Promise.resolve(configExport);
+  return typeof configExport === "function" ? configExport() : Promise.resolve(configExport);
 }

@@ -24,7 +24,7 @@ export class Vi5Context {
   createCanvas(
     width: number,
     height: number,
-    renderer?: typeof p5.P2D | typeof p5.WEBGL | typeof p5.P2DHDR | Symbol,
+    renderer?: typeof p5.P2D | typeof p5.WEBGL | typeof p5.P2DHDR | symbol,
   ): p5.Renderer {
     this.#mainCanvas = this.p.createCanvas(width, height, renderer);
     return this.#mainCanvas;

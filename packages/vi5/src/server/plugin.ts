@@ -4,7 +4,7 @@ import index from "./index.html?raw";
 import { dedent } from "../helpers/dedent";
 import type { Config } from "../config";
 
-export function createVi5Plugin(config: Config): Plugin {
+export function createVi5Plugin(config: Config, restartServer: () => Promise<void>): Plugin {
   return {
     name: "vi5",
     configureServer(server) {
@@ -41,9 +41,9 @@ export function createVi5Plugin(config: Config): Plugin {
         define: {
           __vi5_data__: {
             projectName: config.name,
-            objectList: await Array.fromAsync(
-              fs.glob("./src/**/*.object.ts"),
-            ).then((files) => files.map((f) => "/" + f.replace(/\\/g, "/"))),
+            objectList: await Array.fromAsync(fs.glob("./src/**/*.object.ts")).then((files) =>
+              files.map((f) => "/" + f.replace(/\\/g, "/")),
+            ),
           },
         },
         // resolve: {
@@ -57,7 +57,7 @@ export function createVi5Plugin(config: Config): Plugin {
       filter: {
         id: /.*\.object\.ts$/,
       },
-      async handler(code, id) {
+      async handler(code, _id) {
         return (
           code +
           "\n" +
@@ -78,6 +78,12 @@ export function createVi5Plugin(config: Config): Plugin {
         `)
         );
       },
+    },
+    hotUpdate({ file }) {
+      if (file === "vi5.config.ts") {
+        this.info("vi5.config.ts changed. restarting server...");
+        void restartServer();
+      }
     },
   };
 }
