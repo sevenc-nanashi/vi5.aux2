@@ -358,7 +358,7 @@ impl Vi5Aux2 {
         }
         // TODO: 実行ファイルのパスを適切に設定する
         let cef_server_path =
-            std::path::Path::new("e:/aviutl2/vi5.aux2/target/release/vi5-cef-server.exe");
+            std::path::Path::new("e:/aviutl2/vi5.aux2/target/debug/vi5-cef-server.exe");
         let mut child = tokio::process::Command::new(cef_server_path)
             .arg("--port")
             .arg(port.to_string())

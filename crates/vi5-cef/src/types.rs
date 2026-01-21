@@ -81,12 +81,16 @@ pub struct RenderRequest {
 
 #[derive(Debug, Clone)]
 pub struct FrameInfo {
-    pub x: i32,
-    pub y: i32,
-    pub width: i32,
-    pub height: i32,
-    pub current_frame: i32,
-    pub total_frames: i32,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub screen_width: usize,
+    pub screen_height: usize,
+    pub current_frame: usize,
+    pub current_time: f64,
+    pub total_frames: usize,
+    pub total_time: f64,
+    pub framerate: f64,
 }
 
 #[derive(Debug, Clone)]

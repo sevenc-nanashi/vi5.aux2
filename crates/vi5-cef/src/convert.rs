@@ -47,10 +47,14 @@ impl FrameInfo {
         protocol::common::FrameInfo {
             x: self.x,
             y: self.y,
-            width: self.width,
-            height: self.height,
-            current_frame: self.current_frame,
-            total_frames: self.total_frames,
+            z: self.z,
+            screen_width: self.screen_width as _,
+            screen_height: self.screen_height as _,
+            current_frame: self.current_frame as _,
+            current_time: self.current_time,
+            total_frames: self.total_frames as _,
+            total_time: self.total_time,
+            framerate: self.framerate,
         }
     }
 }

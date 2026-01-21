@@ -3,6 +3,32 @@
 --END_HEADER
 local internal = obj.module("--MODULE_NAME--")
 
+local function to_json(v)
+  if type(v) == "number" then
+    return tostring(v)
+  elseif type(v) == "string" then
+    return string.format("%q", v)
+  elseif type(v) == "boolean" then
+    return tostring(v)
+  elseif type(v) == "table" then
+    local is_array = (#v > 0)
+    local items = {}
+    if is_array then
+      for i = 1, #v do
+        items[#items + 1] = to_json(v[i])
+      end
+      return "[" .. table.concat(items, ",") .. "]"
+    else
+      for k, val in pairs(v) do
+        items[#items + 1] = string.format("%q:%s", k, to_json(val))
+      end
+      return "{" .. table.concat(items, ",") .. "}"
+    end
+  else
+    return "null"
+  end
+end
+
 local object_id = "--OBJECT_ID--"
 local params_keys = {
   --PARAMETER_KEYS--
@@ -10,60 +36,52 @@ local params_keys = {
 local param_values = {
   --PARAMETER_VALUES--
 }
-local serialized_params_keys = {};
-local serialized_params_values = {};
-local serialized_next_frame_values = {};
 local param_types = {
   --PARAMETER_TYPES--
 }
 local next_frame = obj.time + (1 / obj.framerate)
+local serialized_params = {};
 for i = 1, #params_keys do
-  serialized_params_keys[i] = params_keys[i]
-  local v = param_values[i]
-  local t = param_types[i]
-  if t == "Color" then
-    if v == nil then
-      serialized_params_values[i] = internal.serialize_number(0)
-      serialized_next_frame_values[i] = serialized_params_values[i]
+  local key = params_keys[i]
+  local value = param_values[i]
+  local kind = param_types[i]
+  if kind == "Color" then
+    if value == nil then
+      serialized_params[key] = { type = kind, value = 0 }
     else
-      serialized_params_values[i] = internal.serialize_number(0xff000000 + v)
-      serialized_next_frame_values[i] = serialized_params_values[i]
+      serialized_params[key] = { type = kind, value = 0xff000000 + value }
     end
   elseif type(v) == "number" then
-    serialized_params_values[i] = internal.serialize_number(v)
-    serialized_next_frame_values[i] = internal.serialize_number(obj.getvalue(i - 1, next_frame) or v)
-  elseif type(v) == "string" then
-    serialized_params_values[i] = internal.serialize_string(v)
-    serialized_next_frame_values[i] = internal.serialize_string(v)
-  elseif type(v) == "boolean" then
-    serialized_params_values[i] = internal.serialize_bool(v)
-    serialized_next_frame_values[i] = internal.serialize_bool(v)
+    serialized_params[key] = { type = kind, value = value }
+    -- serialized_next_frame_values[i] = internal.serialize_number(obj.getvalue(i - 1, next_frame) or v)
+  else
+    serialized_params[key] = { type = kind, value = value }
   end
 end
 
-local serialized_obj_keys = {};
-local serialized_obj_values = {};
-for k, v in pairs(obj) do
-  if type(v) == "number" then
-    serialized_obj_keys[#serialized_obj_keys + 1] = k
-    serialized_obj_values[#serialized_obj_values + 1] = internal.serialize_number(v)
-  elseif type(v) == "string" then
-    serialized_obj_keys[#serialized_obj_keys + 1] = k
-    serialized_obj_values[#serialized_obj_values + 1] = internal.serialize_string(v)
-  elseif type(v) == "boolean" then
-    serialized_obj_keys[#serialized_obj_keys + 1] = k
-    serialized_obj_values[#serialized_obj_values + 1] = internal.serialize_bool(v)
-  end
+local function get_frame_info_at(frame_offset)
+  local time = obj.time + frame_offset * (1 / obj.framerate)
+  local frame_info = {
+    x = obj.getvalue("x", time),
+    y = obj.getvalue("y", time),
+    z = obj.getvalue("z", time),
+    canvas_width = obj.screen_w,
+    canvas_height = obj.screen_h,
+    current_frame = obj.frame + frame_offset,
+    current_time = time,
+    total_frames = obj.totalframe,
+    total_time = obj.totaltime,
+    framerate = obj.framerate
+  }
+  return frame_info
 end
+local frame_info = get_frame_info_at(0)
 
 local image, w, h = internal.call_object(
   object_id,
-  serialized_params_keys,
-  serialized_params_values,
-  serialized_next_frame_values,
-  param_types,
-  serialized_obj_keys,
-  serialized_obj_values
+  obj.effect_id,
+  to_json(serialized_params),
+  to_json(frame_info)
 )
 obj.putpixeldata("object", image, w, h, "rgba")
 internal.free_image(obj.effect_id)

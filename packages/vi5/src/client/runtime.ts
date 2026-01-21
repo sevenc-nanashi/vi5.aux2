@@ -45,10 +45,16 @@ const contexts = new Map<bigint, Vi5Context>();
 async function maybeInitializeContext<T extends ParameterDefinitions>(
   objectId: bigint,
   object: Vi5Object<T>,
+  renderRequest: RenderRequest,
   parameter: InferParameters<T>,
 ): Promise<Vi5Context | undefined> {
   if (!initializePromises.has(objectId)) {
-    const initPromise = initializeContext(objectId, object, parameter);
+    const initPromise = initializeContext(
+      objectId,
+      object,
+      renderRequest,
+      parameter,
+    );
     initializePromises.set(objectId, initPromise);
 
     // 一瞬だけ待ってあげる
@@ -61,12 +67,14 @@ async function maybeInitializeContext<T extends ParameterDefinitions>(
 async function initializeContext<T extends ParameterDefinitions>(
   id: bigint,
   object: Vi5Object<T>,
+  renderRequest: RenderRequest,
   parameter: InferParameters<T>,
 ): Promise<void> {
   const ctx = new Vi5Context();
   // TODO: エラー処理
   new p5((sketch) => {
     ctx.initialize(sketch);
+    ctx.setFrameInfo(renderRequest.frameInfo!);
     sketch.setup = () => {
       const setup = object.setup(ctx, parameter);
       if (setup instanceof Promise) {
@@ -104,7 +112,7 @@ function grpcParamsToJsParams<T extends ParameterDefinitions>(
           r: param.value.value.r,
           g: param.value.value.g,
           b: param.value.value.b,
-          a: param.value.value.a as 0 | 1,
+          a: param.value.value.a as 0 | 255,
         };
         break;
       default:
@@ -330,7 +338,12 @@ export class Vi5Runtime {
     }
 
     const params = grpcParamsToJsParams(request.parameters);
-    const ctx = await maybeInitializeContext(request.objectId, object, params);
+    const ctx = await maybeInitializeContext(
+      request.objectId,
+      object,
+      request,
+      params,
+    );
     if (!ctx) {
       runtimeLog.info`Object not initialized yet: ${request.object}`;
       return {
@@ -339,6 +352,7 @@ export class Vi5Runtime {
         error: `Object not initialized yet: ${request.object}`,
       };
     }
+    ctx.setFrameInfo(request.frameInfo!);
     object.draw(ctx, params);
     const p5Canvas = ctx.mainCanvas;
     return {

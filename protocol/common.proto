@@ -13,12 +13,16 @@ message RenderRequest {
 }
 
 message FrameInfo {
-  int32 x = 1;
-  int32 y = 2;
-  int32 width = 3;
-  int32 height = 4;
-  int32 current_frame = 5;
-  int32 total_frames = 6;
+  double x = 1;
+  double y = 2;
+  double z = 3;
+  int32 screen_width = 4;
+  int32 screen_height = 5;
+  int32 current_frame = 6;
+  double current_time = 7;
+  int32 total_frames = 8;
+  double total_time = 9;
+  double framerate = 10;
 }
 
 message Parameter {

@@ -4,47 +4,33 @@ use aviutl2::{AnyResult, AviUtl2Info, generic::GenericPlugin, log, module::Scrip
 
 use crate::Vi5Aux2;
 
-/// `obj`相当
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
-struct ScriptRuntimeInfo {
-    ox: f64,
-    oy: f64,
-    oz: f64,
-    rx: f64,
-    ry: f64,
-    rz: f64,
-    cx: f64,
-    cy: f64,
-    cz: f64,
-    sx: f64,
-    sy: f64,
-    sz: f64,
-    zoom: f64,
-    aspect: f64,
-    alpha: f64,
-    x: i32,
-    y: i32,
-    z: i32,
-    w: i32,
-    h: i32,
-    screen_w: i32,
-    screen_h: i32,
+#[serde(tag = "type", content = "value")]
+enum LuaParameter {
+    Str(String),
+    Text(String),
+    Number(f64),
+    Bool(bool),
+    Color(u32),
+}
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
+struct LuaFrameInfo {
+    x: f64,
+    y: f64,
+    z: f64,
+    canvas_width: i32,
+    canvas_height: i32,
+    current_frame: i32,
+    current_time: f64,
+    total_frames: i32,
+    total_time: f64,
     framerate: f64,
-    frame: i32,
-    time: f64,
-    totalframe: i32,
-    totaltime: f64,
-    layer: i32,
-    index: i32,
-    num: i32,
-    id: i64,
-    effect_id: i64,
 }
 
 #[aviutl2::plugin(ScriptModule)]
 pub struct InternalModule;
 
-static TEMPORARY_BUFFER: std::sync::LazyLock<std::sync::Mutex<dashmap::DashMap<i64, Vec<u8>>>> =
+static TEMPORARY_BUFFER: std::sync::LazyLock<std::sync::Mutex<dashmap::DashMap<i32, Vec<u8>>>> =
     std::sync::LazyLock::new(|| std::sync::Mutex::new(dashmap::DashMap::new()));
 
 impl aviutl2::module::ScriptModule for InternalModule {
@@ -62,87 +48,27 @@ impl aviutl2::module::ScriptModule for InternalModule {
 
 #[aviutl2::module::functions]
 impl InternalModule {
-    fn serialize_string(&self, input: String) -> aviutl2::AnyResult<String> {
-        Ok(serde_json::to_string(&input)?)
-    }
-    fn serialize_i64(&self, input_low: i32, input_high: i32) -> aviutl2::AnyResult<String> {
-        Ok(serde_json::to_string(
-            &(((input_high as i64) << 32) | (input_low as u32 as i64)),
-        )?)
-    }
-    fn serialize_number(&self, input: f64) -> aviutl2::AnyResult<String> {
-        if input % 1.0 == 0.0 {
-            // NOTE: serde_jsonはf64 -> i64はできないけどi64 -> f64はできるので、i64のほうが都合が良い
-            Ok(serde_json::to_string(&(input as i64))?)
-        } else {
-            Ok(serde_json::to_string(&input)?)
-        }
-    }
-    fn serialize_bool(&self, input: bool) -> aviutl2::AnyResult<String> {
-        Ok(serde_json::to_string(&input)?)
-    }
-    #[allow(clippy::too_many_arguments)]
     fn call_object(
         &self,
         object_name: String,
-        serialized_param_keys: aviutl2::module::ScriptModuleParamArray,
-        serialized_param_values: aviutl2::module::ScriptModuleParamArray,
-        serialized_next_frame_values: aviutl2::module::ScriptModuleParamArray,
-        param_types: aviutl2::module::ScriptModuleParamArray,
-        serialized_obj_keys: aviutl2::module::ScriptModuleParamArray,
-        serialized_obj_values: aviutl2::module::ScriptModuleParamArray,
+        effect_id: i32,
+        params_json: String,
+        frame_info_json: String,
     ) -> aviutl2::AnyResult<(*const u8, usize, usize)> {
-        let mut params = HashMap::<String, (String, serde_json::Value)>::new();
-        let mut next_frame_params = HashMap::<String, (String, serde_json::Value)>::new();
-        for i in 0..serialized_param_keys.len() {
-            if let (Some(key), Some(value), Some(next_frame_value), Some(kind)) = (
-                serialized_param_keys.get_str(i),
-                serialized_param_values.get_str(i),
-                serialized_next_frame_values.get_str(i),
-                param_types.get_str(i),
-            ) {
-                params.insert(
-                    key.to_string(),
-                    (kind.clone(), serde_json::from_str(&value)?),
-                );
-                next_frame_params.insert(
-                    key.to_string(),
-                    (kind, serde_json::from_str(&next_frame_value)?),
-                );
-            }
-        }
-        let mut base_obj = HashMap::<String, serde_json::Value>::new();
-        for i in 0..serialized_obj_keys.len() {
-            if let (Some(key), Some(value)) = (
-                serialized_obj_keys.get_str(i),
-                serialized_obj_values.get_str(i),
-            ) {
-                base_obj.insert(key.to_string(), serde_json::from_str(&value)?);
-            }
-        }
-        let obj = serde_json::from_value::<ScriptRuntimeInfo>(serde_json::Value::Object(
-            serde_json::Map::from_iter(base_obj.into_iter()),
-        ))?;
+        let params: HashMap<String, LuaParameter> = serde_json::from_str(&params_json)?;
+        let frame_info: LuaFrameInfo = serde_json::from_str(&frame_info_json)?;
         let parameters = params
             .iter()
-            .map(|(key, (kind, value))| {
+            .map(|(key, param)| {
                 anyhow::Ok(vi5_cef::Parameter {
                     key: key.clone(),
-                    value: match kind.as_str() {
-                        "Str" => vi5_cef::ParameterValue::Str(serde_json::from_value::<String>(
-                            value.clone(),
-                        )?),
-                        "Text" => vi5_cef::ParameterValue::Text(serde_json::from_value::<String>(
-                            value.clone(),
-                        )?),
-                        "Number" => vi5_cef::ParameterValue::Number(serde_json::from_value::<f64>(
-                            value.clone(),
-                        )?),
-                        "Bool" => vi5_cef::ParameterValue::Bool(serde_json::from_value::<bool>(
-                            value.clone(),
-                        )?),
-                        "Color" => {
-                            let color = serde_json::from_value::<u32>(value.clone())?;
+                    value: match param {
+                        LuaParameter::Str(v) => vi5_cef::ParameterValue::Str(v.clone()),
+                        LuaParameter::Text(v) => vi5_cef::ParameterValue::Text(v.clone()),
+                        LuaParameter::Number(v) => vi5_cef::ParameterValue::Number(*v),
+                        LuaParameter::Bool(v) => vi5_cef::ParameterValue::Bool(*v),
+                        LuaParameter::Color(v) => {
+                            let color = *v;
                             vi5_cef::ParameterValue::Color(vi5_cef::Color {
                                 r: ((color >> 16) & 0xFF) as u8,
                                 g: ((color >> 8) & 0xFF) as u8,
@@ -150,7 +76,6 @@ impl InternalModule {
                                 a: ((color >> 24) & 0xFF) as u8,
                             })
                         }
-                        _ => vi5_cef::ParameterValue::Str(String::new()),
                     },
                 })
             })
@@ -162,14 +87,18 @@ impl InternalModule {
                     client
                         .batch_render(vec![vi5_cef::RenderRequest {
                             object: object_name,
-                            object_id: obj.id as i64,
+                            object_id: effect_id as i64,
                             frame_info: vi5_cef::FrameInfo {
-                                x: obj.x,
-                                y: obj.y,
-                                width: obj.screen_w,
-                                height: obj.screen_h,
-                                current_frame: obj.frame,
-                                total_frames: obj.totalframe,
+                                x: frame_info.x,
+                                y: frame_info.y,
+                                z: frame_info.z,
+                                screen_width: frame_info.canvas_width as _,
+                                screen_height: frame_info.canvas_height as _,
+                                current_frame: frame_info.current_frame as _,
+                                current_time: frame_info.current_time,
+                                total_frames: frame_info.total_frames as _,
+                                total_time: frame_info.total_time,
+                                framerate: frame_info.framerate,
                             },
                             parameters,
                         }])
@@ -190,11 +119,11 @@ impl InternalModule {
                 TEMPORARY_BUFFER
                     .lock()
                     .unwrap()
-                    .insert(obj.effect_id as i64, image_data);
+                    .insert(effect_id, image_data);
                 log::debug!(
                     "Rendered object '{}' (id: {}) with size {}x{}",
                     object_name,
-                    obj.effect_id,
+                    effect_id,
                     w,
                     h
                 );
@@ -206,12 +135,7 @@ impl InternalModule {
         }
     }
     fn free_image(&self, id: i32) {
-        if TEMPORARY_BUFFER
-            .lock()
-            .unwrap()
-            .remove(&(id as i64))
-            .is_some()
-        {
+        if TEMPORARY_BUFFER.lock().unwrap().remove(&(id)).is_some() {
             log::debug!("Freed image buffer for id {}", id);
         } else {
             log::warn!("No image buffer found for id {}", id);

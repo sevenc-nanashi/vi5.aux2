@@ -1,15 +1,19 @@
 import p5 from "p5";
+import type { FrameInfo } from "../gen/common_pb";
 p5.disableFriendlyErrors = true;
 
 export class Vi5Context {
   #p5Instance: p5 | null = null;
   #mainCanvas: p5.Renderer | null = null;
   #graphics: p5.Graphics[] = [];
+  #frameInfo: FrameInfo | null = null;
 
+  /** @internal */
   constructor() {
     this.#p5Instance = null;
   }
 
+  /** @internal */
   initialize(p5Instance: p5) {
     this.#p5Instance = p5Instance;
   }
@@ -46,6 +50,19 @@ export class Vi5Context {
     return this.#mainCanvas;
   }
 
+  get frameInfo() {
+    if (!this.#frameInfo) {
+      throw new Error("Frame info has not been set yet.");
+    }
+    return this.#frameInfo;
+  }
+
+  /** @internal */
+  setFrameInfo(frameInfo: FrameInfo) {
+    this.#frameInfo = frameInfo;
+  }
+
+  /** @internal */
   teardown() {
     this.#mainCanvas?.remove();
     this.#graphics.forEach((g) => g.remove());

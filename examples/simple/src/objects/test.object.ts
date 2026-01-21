@@ -26,6 +26,6 @@ export default defineObject({
     console.log("Drawing with params:", params)
     ctx.p.background(100);
     ctx.p.fill(...colorToP5Tuple(params.color));
-    ctx.p.ellipse(100, 100, params.radius, params.radius);
+    ctx.p.ellipse(100, ctx.frameInfo.currentFrame, params.radius, params.radius);
   },
 });
