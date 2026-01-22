@@ -112,6 +112,18 @@ impl RenderLoop {
         }
     }
 
+    pub async fn assert_initialized(&self) -> anyhow::Result<()> {
+        let initialized = self
+            .initialized
+            .lock()
+            .expect("Failed to lock initialization state");
+        match initialized.as_ref() {
+            Some(Ok(_)) => Ok(()),
+            Some(Err(e)) => Err(anyhow::anyhow!("RenderLoop initialization failed: {}", e)),
+            None => anyhow::bail!("RenderLoop is not initialized"),
+        }
+    }
+
     pub async fn wait_for_initialization(&self) -> anyhow::Result<()> {
         let start_time = std::time::Instant::now();
         loop {
@@ -194,7 +206,7 @@ impl RenderLoop {
         &self,
         request: crate::protocol::common::BatchRenderRequest,
     ) -> anyhow::Result<crate::protocol::libserver::BatchRenderResponse> {
-        self.wait_for_initialization().await?;
+        self.assert_initialized().await?;
         if request.render_requests.is_empty() {
             return Ok(crate::protocol::libserver::BatchRenderResponse {
                 render_responses: vec![],

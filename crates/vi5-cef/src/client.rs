@@ -24,7 +24,7 @@ impl Client {
         let inner =
             LibServerClient::connect(tonic::transport::Endpoint::new(dst)?.pipe(|endpoint| {
                 if let Some(timeout) = timeout {
-                    endpoint.timeout(timeout)
+                    endpoint.connect_timeout(timeout)
                 } else {
                     endpoint
                 }

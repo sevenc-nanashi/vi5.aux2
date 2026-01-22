@@ -1,5 +1,7 @@
 --PARAMETER_DEFINITIONS--
 --LABEL--
+--group:Performance
+--track@batch_size:Batch Size,1,16,10,1
 --END_HEADER
 local internal = obj.module("--MODULE_NAME--")
 
@@ -84,7 +86,6 @@ end
 local batch_serialized_params = {}
 local batch_frame_info = {}
 
-local batch_size = internal.batch_size()
 for i = 0, batch_size - 1 do
   if obj.frame + i >= obj.totalframe then
     break
@@ -96,6 +97,7 @@ end
 local image, w, h = internal.call_object(
   object_id,
   obj.effect_id,
+  batch_size,
   to_json(batch_serialized_params),
   to_json(batch_frame_info)
 )

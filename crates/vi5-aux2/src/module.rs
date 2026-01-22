@@ -166,20 +166,19 @@ impl aviutl2::module::ScriptModule for InternalModule {
     }
 }
 
-static BATCH_SIZE: usize = 8;
 #[aviutl2::module::functions]
 impl InternalModule {
-    fn batch_size(&self) -> usize {
-        BATCH_SIZE
-    }
-
     fn call_object(
         &self,
         object_name: String,
         effect_id: i32,
+        batch_size: i32,
         params_json: String,
         frame_info_json: String,
     ) -> aviutl2::AnyResult<(*const u8, usize, usize)> {
+        let batch_size: usize = batch_size
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("Invalid batch_size: {}", batch_size))?;
         let batch_params: Vec<HashMap<String, LuaParameter>> = serde_json::from_str(&params_json)?;
         let batch_frame_info: Vec<LuaFrameInfo> = serde_json::from_str(&frame_info_json)?;
         let batch_render_request = if batch_params.len() != batch_frame_info.len() {
@@ -206,18 +205,20 @@ impl InternalModule {
         // - 大前提：キャッシュされていないフレームがある
         // - そのうえで、以下のうちいずれかを満たす場合：
         //   - 現在のフレーム（batch_render_request[0]）のキャッシュが存在しない
-        //   - batch_render_request.len() が BATCH_SIZE 未満（終端付近）
-        //   - BATCH_SIZE * (3 / 4) フレーム以上キャッシュが存在しない（一回のレンダリングでまとめて描画したほうがお得）
+        //   - batch_render_request.len() が batch_size 未満（終端付近）
+        //   - batch_size * (3 / 4) フレーム以上キャッシュが存在しない（一回のレンダリングでまとめて描画したほうがお得）
+        //
+        // NOTE: 3/4という数字はなんとなくなので要調整？
         let should_render_now = !batch_cache_keys
             .iter()
             .all(|key| cached_entries.images.contains_key(key))
             && (!cached_entries.images.contains_key(&batch_cache_keys[0])
-                || batch_render_request.len() < BATCH_SIZE
+                || batch_render_request.len() < batch_size
                 || batch_cache_keys
                     .iter()
                     .filter(|key| !cached_entries.images.contains_key(key))
                     .count()
-                    >= (BATCH_SIZE * 3 / 4));
+                    >= (batch_size * 3 / 4));
 
         if should_render_now {
             let (uncached_keys, uncached_requests) = batch_render_request
