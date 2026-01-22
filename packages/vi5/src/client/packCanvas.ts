@@ -12,6 +12,8 @@ export type JsRenderResponse =
   | {
       type: "success";
       canvas: HTMLCanvasElement;
+      width: number;
+      height: number;
       renderNonce: number;
     }
   | {
@@ -97,8 +99,8 @@ const packBatch = (
       continue;
     }
 
-    const width = response.canvas.width;
-    const height = response.canvas.height;
+    const width = response.width;
+    const height = response.height;
     if (
       width > Vi5Runtime.get().canvas.width ||
       height > Vi5Runtime.get().canvas.height - metadataRows

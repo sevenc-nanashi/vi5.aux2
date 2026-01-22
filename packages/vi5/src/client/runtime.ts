@@ -224,17 +224,31 @@ function toGrpcParameterDefinition(
   });
 }
 
+const temporaryCanvases: HTMLCanvasElement[] = [];
+
 const cloneCanvas = (source: HTMLCanvasElement): HTMLCanvasElement => {
-  const clone = document.createElement("canvas");
-  clone.width = source.width;
-  clone.height = source.height;
-  clone.getContext("2d")!.drawImage(source, 0, 0);
+  if (temporaryCanvases.length === 0) {
+    runtimeLog.debug`Adding new temporary canvas (pool size: ${
+      temporaryCanvases.length + 1
+    })`;
+  }
+  const clone = temporaryCanvases.pop() ?? document.createElement("canvas");
+  if (clone.width < source.width) {
+    runtimeLog.debug`Resizing temporary canvas to width ${source.width}`;
+    clone.width = source.width;
+  }
+  if (clone.height < source.height) {
+    runtimeLog.debug`Resizing temporary canvas to height ${source.height}`;
+    clone.height = source.height;
+  }
+  const ctx = clone.getContext("2d")!;
+  ctx.clearRect(0, 0, source.width, source.height);
+  ctx.drawImage(source, 0, 0, source.width, source.height);
   return clone;
 };
 
 const disposeCanvas = (canvas: HTMLCanvasElement): void => {
-  canvas.width = 0;
-  canvas.height = 0;
+  temporaryCanvases.push(canvas);
 };
 
 export class Vi5Runtime {
@@ -280,22 +294,20 @@ export class Vi5Runtime {
   async render(nonce: number, dataB64: string) {
     const data = await fastBase64.toBytes(dataB64);
     const renderPayload = protobuf.fromBinary(BatchRenderRequestSchema, data);
-    const jsResponses = await Promise.all(
-      renderPayload.renderRequests.map(
-        async (req): Promise<JsRenderResponse> => {
-          try {
-            return await this.doRender(req);
-          } catch (e) {
-            runtimeLog.error`Error during rendering object ${req.object}: ${e}`;
-            return {
-              type: "error",
-              renderNonce: req.renderNonce,
-              error: `Error during rendering: ${e}`,
-            };
-          }
-        },
-      ),
-    );
+    const jsResponses: JsRenderResponse[] = [];
+
+    for (const req of renderPayload.renderRequests) {
+      try {
+        jsResponses.push(await this.doRender(req));
+      } catch (e) {
+        runtimeLog.error`Error during rendering object ${req.object}: ${e}`;
+        jsResponses.push({
+          type: "error",
+          renderNonce: req.renderNonce,
+          error: `Error during rendering: ${e}`,
+        });
+      }
+    }
     const canvases = new Map<number, HTMLCanvasElement>();
     for (const resp of jsResponses) {
       if (resp.type === "success") {
@@ -304,6 +316,11 @@ export class Vi5Runtime {
     }
     const packed = packCanvases(jsResponses);
     for (const packedResponse of packed) {
+      this.drawMessage(
+        MaybeIncompleteRenderResponseSchema,
+        packedResponse,
+        nonce,
+      );
       for (const renderResponse of packedResponse.renderResponses) {
         if (renderResponse.response.case === "rendereredObjectInfo") {
           const info = renderResponse.response.value as RendereredObjectInfo;
@@ -322,11 +339,6 @@ export class Vi5Runtime {
           runtimeLog.debug`Rendered object ${renderResponse.nonce} at (${info.x}, ${info.y}) with size ${info.width}x${info.height}`;
         }
       }
-      this.drawMessage(
-        MaybeIncompleteRenderResponseSchema,
-        packedResponse,
-        nonce,
-      );
     }
     for (const canvas of canvases.values()) {
       disposeCanvas(canvas);
@@ -374,11 +386,14 @@ export class Vi5Runtime {
     return {
       type: "success",
       renderNonce: request.renderNonce,
+      width: p5Canvas.width,
+      height: p5Canvas.height,
       // TODO: 描画 -> メインキャンバスにコピー -> 次の描画、の方が速そうなのでそうする
       canvas: cloneCanvas(p5Canvas.elt),
     };
   }
 
+  #pixelDataCache: ImageData | null = null;
   drawMessage<Desc extends protobuf.DescMessage>(
     schema: Desc,
     data: protobuf.MessageShape<Desc> | protobuf.MessageInitShape<Desc>,
@@ -404,15 +419,32 @@ export class Vi5Runtime {
       ...message,
     ];
     runtimeLog.debug`Sending message with nonce ${nonce} and length ${binaryLength}`;
+    const numPixels = Math.ceil(payload.length / 3);
+    const requiredHeight = Math.ceil(numPixels / this.canvas.width);
+    if (requiredHeight > this.canvas.height) {
+      // TODO: ちゃんとエラー処理
+      throw new Error(
+        `Canvas height (${this.canvas.height}) is not enough to draw the message (requires ${requiredHeight} pixels).`,
+      );
+    }
 
+    if (!this.#pixelDataCache) {
+      this.#pixelDataCache = this.ctx.createImageData(this.canvas.width, 64);
+    }
+
+    const pixelData = this.#pixelDataCache;
     for (let i = 0; i < payload.length; i += 3) {
       const chunk = payload.slice(i, i + 3);
       const index = i / 3;
       const x = index % this.canvas.width;
       const y = Math.floor(index / this.canvas.width);
-      this.ctx.fillStyle = `rgb(${chunk[0] || 0}, ${chunk[1] || 0}, ${chunk[2] || 0}, 1)`;
-      this.ctx.fillRect(x, y, 1, 1);
+      const pixelIndex = (y * this.canvas.width + x) * 4;
+      pixelData.data[pixelIndex + 0] = chunk[0] || 0;
+      pixelData.data[pixelIndex + 1] = chunk[1] || 0;
+      pixelData.data[pixelIndex + 2] = chunk[2] || 0;
+      pixelData.data[pixelIndex + 3] = 255;
     }
+    this.ctx.putImageData(pixelData, 0, 0);
   }
 
   static get() {

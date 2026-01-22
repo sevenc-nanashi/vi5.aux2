@@ -525,6 +525,10 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
         }
     }
 
+    fn on_clear_cache(&mut self, _edit_section: &aviutl2::generic::EditSection) {
+        crate::module::clear_render_cache();
+    }
+
     fn on_project_save(&mut self, project: &mut aviutl2::generic::ProjectFile) {
         project.clear_params();
         if let Err(e) = project.serialize(

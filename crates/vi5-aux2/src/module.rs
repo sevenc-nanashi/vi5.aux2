@@ -3,9 +3,7 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use aviutl2::{
-    AnyResult, AviUtl2Info, generic::GenericPlugin, ldbg, log, module::ScriptModuleFunctions,
-};
+use aviutl2::{AnyResult, AviUtl2Info, generic::GenericPlugin, log, module::ScriptModuleFunctions};
 
 use crate::Vi5Aux2;
 
@@ -309,4 +307,9 @@ impl InternalModule {
             log::warn!("No image buffer found for id {}", id);
         }
     }
+}
+
+pub fn clear_render_cache() {
+    RENDER_CACHE.clear();
+    TEMPORARY_BUFFER.clear();
 }
