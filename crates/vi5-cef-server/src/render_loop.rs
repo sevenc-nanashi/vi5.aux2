@@ -40,15 +40,11 @@ fn maybe_temporary_save_buffer(
 }
 
 fn on_paint(buffer: &[u8], width: usize, height: usize, bytes_per_row: usize) {
-    let is_bgra = if buffer[0..4] == [255, 192, 128, 255] {
-        tracing::debug!("RGBA format detected in paint buffer");
+    if buffer[0..4] == [255, 192, 128, 255] {
         false
-    } else if buffer[0..4] == [128, 192, 255, 255] {
-        tracing::debug!("BGRA format detected in paint buffer");
-        true
     } else {
         tracing::warn!(
-            "Header format not recognized in paint buffer, first 16 bytes: {:?}",
+            "Invalid paint buffer header: {:?}",
             &buffer[0..16.min(buffer.len())]
         );
         maybe_temporary_save_buffer(buffer, width, height, bytes_per_row, 0);
@@ -58,29 +54,15 @@ fn on_paint(buffer: &[u8], width: usize, height: usize, bytes_per_row: usize) {
         "First 20 bytes of buffer: {:?}",
         &buffer[..20.min(buffer.len())]
     );
-    let buffer = buffer.as_ref();
     // パフォーマンスのために、バッファのフルコピーはnonceがちゃんとしていた場合にのみ行う
-    let nonce = u32::from_le_bytes(if is_bgra {
-        [buffer[6], buffer[5], buffer[4], buffer[10]]
-    } else {
-        [buffer[4], buffer[5], buffer[6], buffer[8]]
-    });
+    let nonce = u32::from_le_bytes([buffer[4], buffer[5], buffer[6], buffer[8]]);
     if let Some(mut callback) = PAINT_CALLBACKS.get_mut(&nonce) {
         let mut slice = vec![0u8; width * height * 4];
-        if is_bgra {
-            for y in 0..height {
-                let src_start = y * bytes_per_row;
-                let dst_start = y * width * 4;
-                for x in 0..width {
-                    let src_index = src_start + x * 4;
-                    let dst_index = dst_start + x * 4;
-                    slice[dst_index] = buffer[src_index + 2];
-                    slice[dst_index + 1] = buffer[src_index + 1];
-                    slice[dst_index + 2] = buffer[src_index];
-                    slice[dst_index + 3] = buffer[src_index + 3];
-                }
-            }
+        if width * 4 == bytes_per_row {
+            tracing::trace!("Performing direct copy for paint buffer");
+            slice.copy_from_slice(&buffer[0..width * height * 4]);
         } else {
+            tracing::trace!("Performing row-by-row copy for paint buffer");
             for y in 0..height {
                 let src_start = y * bytes_per_row;
                 let dst_start = y * width * 4;
@@ -90,6 +72,7 @@ fn on_paint(buffer: &[u8], width: usize, height: usize, bytes_per_row: usize) {
         }
         match callback(&slice, width, height) {
             std::ops::ControlFlow::Break(()) => {
+                tracing::debug!("Paint callback for nonce {} completed and removed", nonce);
                 drop(callback);
                 PAINT_CALLBACKS.remove(&nonce);
             }
@@ -212,6 +195,7 @@ impl RenderLoop {
         request: crate::protocol::common::BatchRenderRequest,
     ) -> anyhow::Result<crate::protocol::libserver::BatchRenderResponse> {
         self.wait_for_initialization().await?;
+        let start_time = std::time::Instant::now();
         let nonce = loop {
             let nonce = rand::random::<u32>();
             // 1024までは予約しておく
@@ -285,6 +269,11 @@ impl RenderLoop {
 
             if !response.is_incomplete {
                 drop(maybe_tx.take());
+                tracing::debug!(
+                    "All render responses received for nonce {}, took {:?}",
+                    nonce,
+                    start_time.elapsed()
+                );
                 return std::ops::ControlFlow::Break(());
             }
             std::ops::ControlFlow::Continue(())
@@ -303,9 +292,6 @@ impl RenderLoop {
             None,
             1,
         );
-        if let Some(host) = self.browser.host() {
-            host.invalidate(cef::PaintElementType::VIEW);
-        }
         let mut render_responses = vec![];
         let current_nano = std::time::Instant::now();
         loop {
@@ -348,10 +334,6 @@ fn read_message_from_image<T: Message + Default>(buffer: &[u8]) -> anyhow::Resul
     let message_length =
         u32::from_le_bytes([buffer[9], buffer[10], buffer[12], buffer[13]]) as usize;
     tracing::debug!("Decoding message of length {}", message_length);
-    tracing::debug!(
-        "First 20 bytes of buffer: {:?}",
-        &buffer[..20.min(buffer.len())]
-    );
     let mut message_buffer = vec![0u8; message_length];
     #[expect(clippy::needless_range_loop)]
     for i in 0..message_length {

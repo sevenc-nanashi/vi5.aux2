@@ -366,6 +366,7 @@ impl Vi5Aux2 {
             .arg("--devtools")
             .env("PATH", path)
             .env("NO_COLOR", "1")
+            .env("RUST_LOG", "info,vi5_cef=trace")
             // NOTE: C:\Windows\System32 で起動するとなぜかlibcef.dllを見つけられなくて落ちるので、カレントディレクトリを実行ファイルのディレクトリにする
             .current_dir(cef_server_path.parent().unwrap())
             .stdout(std::process::Stdio::piped())

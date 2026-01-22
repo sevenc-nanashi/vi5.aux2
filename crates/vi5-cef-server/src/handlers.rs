@@ -53,6 +53,7 @@ wrap_render_handler! {
             if type_ != PaintElementType::VIEW {
                 return;
             }
+            tracing::trace!("Received software paint from CEF");
             if buffer.is_null() || width <= 0 || height <= 0 {
                 return;
             }
@@ -74,6 +75,7 @@ wrap_render_handler! {
             if info.is_none() {
                 return;
             }
+            tracing::trace!("Received accelerated paint from CEF");
             let info = info.unwrap();
             match self.gpu.capture(info, self.on_accelerated_paint) {
                 Ok(()) => {

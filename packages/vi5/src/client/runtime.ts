@@ -265,7 +265,6 @@ export class Vi5Runtime {
   }
 
   async render(nonce: number, dataB64: string) {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     const data = await fastBase64.toBytes(dataB64);
     const renderPayload = protobuf.fromBinary(BatchRenderRequestSchema, data);
     const jsResponses = await Promise.all(
@@ -292,10 +291,10 @@ export class Vi5Runtime {
     }
     const packed = packCanvases(jsResponses);
     for (const packedResponse of packed) {
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       for (const renderResponse of packedResponse.renderResponses) {
         if (renderResponse.response.case === "rendereredObjectInfo") {
           const info = renderResponse.response.value as RendereredObjectInfo;
+          this.ctx.clearRect(info.x, info.y, info.width, info.height);
           this.ctx.drawImage(
             canvases.get(renderResponse.nonce)!,
             info.x,
