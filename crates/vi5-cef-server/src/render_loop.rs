@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use base64::Engine;
-use cef::{ImplBrowser, ImplBrowserHost, ImplFrame};
+use cef::{ImplBrowser, ImplFrame};
 use prost::Message;
 
 type PaintCallback = dyn FnMut(&[u8], usize, usize) -> std::ops::ControlFlow<()> + Send + Sync;
@@ -195,6 +195,15 @@ impl RenderLoop {
         request: crate::protocol::common::BatchRenderRequest,
     ) -> anyhow::Result<crate::protocol::libserver::BatchRenderResponse> {
         self.wait_for_initialization().await?;
+        if request.render_requests.is_empty() {
+            return Ok(crate::protocol::libserver::BatchRenderResponse {
+                render_responses: vec![],
+            });
+        }
+        tracing::debug!(
+            "Starting batch render with {} requests",
+            request.render_requests.len()
+        );
         let start_time = std::time::Instant::now();
         let nonce = loop {
             let nonce = rand::random::<u32>();

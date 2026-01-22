@@ -40,23 +40,28 @@ local param_types = {
   --PARAMETER_TYPES--
 }
 local next_frame = obj.time + (1 / obj.framerate)
-local serialized_params = {};
-for i = 1, #params_keys do
-  local key = params_keys[i]
-  local value = param_values[i]
-  local kind = param_types[i]
-  if kind == "Color" then
-    if value == nil then
-      serialized_params[key] = { type = kind, value = 0 }
+local function serialize_param_at(frame_offset)
+  local serialized_params = {};
+  for i = 1, #params_keys do
+    local key = params_keys[i]
+    local value = param_values[i]
+    local kind = param_types[i]
+    if kind == "Color" then
+      if value == nil then
+        serialized_params[key] = { type = kind, value = 0 }
+      else
+        serialized_params[key] = { type = kind, value = 0xff000000 + value }
+      end
+    elseif type(v) == "number" then
+      serialized_params[key] = {
+        type = kind,
+        value = obj.getvalue(i - 1, obj.time + frame_offset * (1 / obj.framerate)) or value
+      }
     else
-      serialized_params[key] = { type = kind, value = 0xff000000 + value }
+      serialized_params[key] = { type = kind, value = value }
     end
-  elseif type(v) == "number" then
-    serialized_params[key] = { type = kind, value = value }
-    -- serialized_next_frame_values[i] = internal.serialize_number(obj.getvalue(i - 1, next_frame) or v)
-  else
-    serialized_params[key] = { type = kind, value = value }
   end
+  return serialized_params
 end
 
 local function get_frame_info_at(frame_offset)
@@ -75,13 +80,24 @@ local function get_frame_info_at(frame_offset)
   }
   return frame_info
 end
-local frame_info = get_frame_info_at(0)
+
+local batch_serialized_params = {}
+local batch_frame_info = {}
+
+local batch_size = internal.batch_size()
+for i = 0, batch_size - 1 do
+  if obj.frame + i >= obj.totalframe then
+    break
+  end
+  batch_serialized_params[i + 1] = serialize_param_at(i)
+  batch_frame_info[i + 1] = get_frame_info_at(i)
+end
 
 local image, w, h = internal.call_object(
   object_id,
   obj.effect_id,
-  to_json(serialized_params),
-  to_json(frame_info)
+  to_json(batch_serialized_params),
+  to_json(batch_frame_info)
 )
 obj.putpixeldata("object", image, w, h, "rgba")
 internal.free_image(obj.effect_id)

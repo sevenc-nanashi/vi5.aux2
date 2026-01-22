@@ -16,7 +16,7 @@ type Vi5Server = Arc<
 
 #[aviutl2::plugin(GenericPlugin)]
 struct Vi5Aux2 {
-    runtime: Arc<std::sync::RwLock<Option<tokio::runtime::Runtime>>>,
+    pub runtime: Arc<std::sync::RwLock<Option<tokio::runtime::Runtime>>>,
     server: Vi5Server,
     project_dir: Arc<tokio::sync::Mutex<Option<String>>>,
 
@@ -400,9 +400,9 @@ impl Vi5Aux2 {
                 anyhow::bail!("初期化に失敗しました (exit code: {:?})", code);
             }
 
-            res = vi5_cef::Client::connect_with_timeout(
+            res = vi5_cef::Client::connect(
                 format!("http://localhost:{}", port),
-                std::time::Duration::from_secs(60),
+                Some(std::time::Duration::from_secs(60)),
             ) => {
                 res.map_err(anyhow::Error::from)
             }

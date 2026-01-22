@@ -224,6 +224,19 @@ function toGrpcParameterDefinition(
   });
 }
 
+const cloneCanvas = (source: HTMLCanvasElement): HTMLCanvasElement => {
+  const clone = document.createElement("canvas");
+  clone.width = source.width;
+  clone.height = source.height;
+  clone.getContext("2d")!.drawImage(source, 0, 0);
+  return clone;
+};
+
+const disposeCanvas = (canvas: HTMLCanvasElement): void => {
+  canvas.width = 0;
+  canvas.height = 0;
+};
+
 export class Vi5Runtime {
   readonly canvas: HTMLCanvasElement;
   readonly ctx: CanvasRenderingContext2D;
@@ -297,8 +310,8 @@ export class Vi5Runtime {
           this.ctx.clearRect(info.x, info.y, info.width, info.height);
           this.ctx.drawImage(
             canvases.get(renderResponse.nonce)!,
-            info.x,
-            info.y,
+            0,
+            0,
             info.width,
             info.height,
             info.x,
@@ -315,6 +328,10 @@ export class Vi5Runtime {
         nonce,
       );
     }
+    for (const canvas of canvases.values()) {
+      disposeCanvas(canvas);
+    }
+    canvases.clear();
     // this.drawMessage(
     //   MaybeIncompleteRenderResponseSchema,
     //   {
@@ -357,7 +374,8 @@ export class Vi5Runtime {
     return {
       type: "success",
       renderNonce: request.renderNonce,
-      canvas: p5Canvas.elt,
+      // TODO: 描画 -> メインキャンバスにコピー -> 次の描画、の方が速そうなのでそうする
+      canvas: cloneCanvas(p5Canvas.elt),
     };
   }
 
