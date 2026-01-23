@@ -82,9 +82,6 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
     devDependencies:
-      '@sevenc-nanashi/async-channel':
-        specifier: jsr:^0.2.1
-        version: '@jsr/sevenc-nanashi__async-channel@0.2.1'
       '@types/picomatch':
         specifier: ^4.0.2
         version: 4.0.2
@@ -347,9 +344,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@jsr/sevenc-nanashi__async-channel@0.2.1':
-    resolution: {integrity: sha512-724OTVZtEroXG01oGlYhnBSUdXLw1nvvCr+TcqetruBC5y+hpbWtl7Fk2NrtKutKz6sc2U3/vznjbvjBK5TtyQ==, tarball: https://npm.jsr.io/~/11/@jsr/sevenc-nanashi__async-channel/0.2.1.tgz}
 
   '@logtape/logtape@2.0.0':
     resolution: {integrity: sha512-z9Hp44mIRXAzgxSyQfFQiRuJ78EMnZa6g43UCxyGOO3RgHjn/7q+5OhdbhypkeHjiJRPxv6RmRsyF0S+OOYWnA==}
@@ -1072,8 +1066,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@jsr/sevenc-nanashi__async-channel@0.2.1': {}
 
   '@logtape/logtape@2.0.0': {}
 
