@@ -77,4 +77,14 @@ impl Client {
         }
         Ok(responses)
     }
+
+    pub async fn purge_cache(&mut self) -> Result<(), tonic::Status> {
+        self.inner.purge_cache(protocol::common::Void {}).await?;
+        Ok(())
+    }
+
+    pub async fn shutdown(&mut self) -> Result<(), tonic::Status> {
+        self.inner.shutdown(protocol::common::Void {}).await?;
+        Ok(())
+    }
 }

@@ -4,6 +4,8 @@ syntax = "proto3";
 
 package common;
 
+message Void {}
+
 message RenderRequest {
   int32 render_nonce = 1;
   string object = 2;

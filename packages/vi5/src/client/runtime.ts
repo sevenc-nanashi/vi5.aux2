@@ -354,6 +354,12 @@ export class Vi5Runtime {
     // );
   }
 
+  purgeCache() {
+    runtimeLog.info`Purging context cache (${contexts.size} contexts)`;
+    contexts.clear();
+    initializePromises.clear();
+  }
+
   private async doRender(request: RenderRequest): Promise<JsRenderResponse> {
     const object = this.objects.get(request.object);
     if (!object) {

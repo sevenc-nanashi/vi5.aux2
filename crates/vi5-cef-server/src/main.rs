@@ -86,7 +86,8 @@ fn main() -> anyhow::Result<()> {
 }
 
 pub async fn main_server(render_loop: RenderLoop, port: u16) -> anyhow::Result<()> {
-    let server = server::MainServer::new(render_loop);
+    let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+    let server = server::MainServer::new(render_loop, shutdown_tx);
     let addr = format!("[::1]:{}", port).parse().unwrap();
     tracing::info!("Starting gRPC server on {}", addr);
     tonic::transport::Server::builder()
@@ -100,10 +101,14 @@ pub async fn main_server(render_loop: RenderLoop, port: u16) -> anyhow::Result<(
                 .unwrap(),
         )
         .serve_with_shutdown(addr, async {
-            tokio::signal::ctrl_c()
-                .await
-                .expect("failed to install Ctrl+C handler");
-            tracing::info!("Shutting down gRPC server");
+            tokio::select! {
+                _ = tokio::signal::ctrl_c() => {
+                    tracing::info!("Shutting down gRPC server");
+                }
+                _ = shutdown_rx => {
+                    tracing::info!("Received shutdown request");
+                }
+            }
         })
         .await?;
     Ok(())

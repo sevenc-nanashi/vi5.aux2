@@ -1,6 +1,7 @@
 pub struct MainServer {
     render_loop: crate::render_loop::RenderLoop,
     processes: tokio::sync::Mutex<Vec<tokio::process::Child>>,
+    shutdown_tx: tokio::sync::Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
 }
 
 #[tonic::async_trait]
@@ -91,13 +92,40 @@ impl crate::protocol::libserver::lib_server_server::LibServer for MainServer {
             .map_err(|e| tonic::Status::internal(format!("Batch render failed: {}", e)))?;
         Ok(tonic::Response::new(render_results))
     }
+
+    async fn purge_cache(
+        &self,
+        _request: tonic::Request<crate::protocol::common::Void>,
+    ) -> Result<tonic::Response<crate::protocol::common::Void>, tonic::Status> {
+        tracing::info!("Received purge cache request");
+        self.render_loop
+            .purge_cache()
+            .await
+            .map_err(|e| tonic::Status::internal(format!("Purge cache failed: {}", e)))?;
+        Ok(tonic::Response::new(crate::protocol::common::Void {}))
+    }
+
+    async fn shutdown(
+        &self,
+        _request: tonic::Request<crate::protocol::common::Void>,
+    ) -> Result<tonic::Response<crate::protocol::common::Void>, tonic::Status> {
+        tracing::info!("Received shutdown request");
+        if let Some(tx) = self.shutdown_tx.lock().await.take() {
+            let _ = tx.send(());
+        }
+        Ok(tonic::Response::new(crate::protocol::common::Void {}))
+    }
 }
 
 impl MainServer {
-    pub fn new(render_loop: crate::render_loop::RenderLoop) -> Self {
+    pub fn new(
+        render_loop: crate::render_loop::RenderLoop,
+        shutdown_tx: tokio::sync::oneshot::Sender<()>,
+    ) -> Self {
         Self {
             render_loop,
             processes: tokio::sync::Mutex::new(Vec::new()),
+            shutdown_tx: tokio::sync::Mutex::new(Some(shutdown_tx)),
         }
     }
 }

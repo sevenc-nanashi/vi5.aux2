@@ -31,4 +31,7 @@ message SuccessRenderResponse {
 service LibServer {
   rpc Initialize(InitializeRequest) returns (InitializeResponse);
   rpc BatchRender(common.BatchRenderRequest) returns (BatchRenderResponse);
+  rpc PurgeCache(common.Void) returns (common.Void);
+  rpc Shutdown(common.Void) returns (common.Void);
 }
+

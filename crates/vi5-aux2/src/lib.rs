@@ -527,6 +527,19 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
 
     fn on_clear_cache(&mut self, _edit_section: &aviutl2::generic::EditSection) {
         crate::module::clear_render_cache();
+        tokio::spawn({
+            let server = Arc::clone(&self.server);
+            async move {
+                let mut server = server.lock().await;
+                let Some((_, client)) = server.as_mut() else {
+                    log::warn!("vi5-cef server is not running, cannot purge cache");
+                    return;
+                };
+                if let Err(e) = client.purge_cache().await {
+                    log::error!("Failed to purge vi5-cef cache: {}", e);
+                }
+            }
+        });
     }
 
     fn on_project_save(&mut self, project: &mut aviutl2::generic::ProjectFile) {
@@ -542,9 +555,10 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
 
 impl Drop for Vi5Aux2 {
     fn drop(&mut self) {
-        if let Some((child, _client)) = self.server.blocking_lock().take() {
+        if let Some((child, mut client)) = self.server.blocking_lock().take() {
             log::info!("Shutting down vi5-cef server...");
             futures::executor::block_on(async {
+                let _ = client.shutdown().await;
                 let mut child = child.lock().await;
                 let _ = child.kill().await;
             });

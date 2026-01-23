@@ -343,8 +343,19 @@ impl RenderLoop {
 
         Ok(crate::protocol::libserver::BatchRenderResponse { render_responses })
     }
-}
 
+    pub async fn purge_cache(&self) -> anyhow::Result<()> {
+        self.assert_initialized().await?;
+        PAINT_CALLBACKS.clear();
+        let js = "if (window.__vi5__ && typeof window.__vi5__.purgeCache === 'function') { window.__vi5__.purgeCache(); }";
+        self.browser.main_frame().unwrap().execute_java_script(
+            Some(&cef::CefString::from(js)),
+            None,
+            1,
+        );
+        Ok(())
+    }
+}
 fn read_message_from_image<T: Message + Default>(buffer: &[u8]) -> anyhow::Result<T> {
     // H1 H2 H3 A_ N1 N2 N3 A_ N4 L1 L2 A_ L3 L4 M1 A_ M2 M3 M4 A_ M5 ...
     // H: header bytes
