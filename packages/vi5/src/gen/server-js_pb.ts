@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file server-js.proto.
  */
 export const file_server_js: GenFile = /*@__PURE__*/
-  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzImoKDkluaXRpYWxpemVJbmZvEhQKDHByb2plY3RfbmFtZRgBIAEoCRIYChByZW5kZXJlcl92ZXJzaW9uGAIgASgJEigKDG9iamVjdF9pbmZvcxgDIAMoCzISLmNvbW1vbi5PYmplY3RJbmZvIksKFFJlbmRlcmVyZWRPYmplY3RJbmZvEgkKAXgYASABKAUSCQoBeRgCIAEoBRINCgV3aWR0aBgDIAEoBRIOCgZoZWlnaHQYBCABKAUijAEKFFNpbmdsZVJlbmRlclJlc3BvbnNlEg0KBW5vbmNlGAEgASgFEkAKFnJlbmRlcmVyZWRfb2JqZWN0X2luZm8YAiABKAsyHi5zZXJ2ZXJqcy5SZW5kZXJlcmVkT2JqZWN0SW5mb0gAEhcKDWVycm9yX21lc3NhZ2UYAyABKAlIAEIKCghyZXNwb25zZSJwCh1NYXliZUluY29tcGxldGVSZW5kZXJSZXNwb25zZRI4ChByZW5kZXJfcmVzcG9uc2VzGAEgAygLMh4uc2VydmVyanMuU2luZ2xlUmVuZGVyUmVzcG9uc2USFQoNaXNfaW5jb21wbGV0ZRgCIAEoCGIGcHJvdG8z", [file_common]);
+  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzImoKDkluaXRpYWxpemVJbmZvEhQKDHByb2plY3RfbmFtZRgBIAEoCRIYChByZW5kZXJlcl92ZXJzaW9uGAIgASgJEigKDG9iamVjdF9pbmZvcxgDIAMoCzISLmNvbW1vbi5PYmplY3RJbmZvIksKFFJlbmRlcmVyZWRPYmplY3RJbmZvEgkKAXgYASABKAUSCQoBeRgCIAEoBRINCgV3aWR0aBgDIAEoBRIOCgZoZWlnaHQYBCABKAUijAEKFFNpbmdsZVJlbmRlclJlc3BvbnNlEg0KBW5vbmNlGAEgASgFEkAKFnJlbmRlcmVyZWRfb2JqZWN0X2luZm8YAiABKAsyHi5zZXJ2ZXJqcy5SZW5kZXJlcmVkT2JqZWN0SW5mb0gAEhcKDWVycm9yX21lc3NhZ2UYAyABKAlIAEIKCghyZXNwb25zZSJ1ChJSb290UmVuZGVyUmVzcG9uc2USOgoHc3VjY2VzcxgBIAEoCzInLnNlcnZlcmpzLk1heWJlSW5jb21wbGV0ZVJlbmRlclJlc3BvbnNlSAASFwoNZXJyb3JfbWVzc2FnZRgCIAEoCUgAQgoKCHJlc3BvbnNlInAKHU1heWJlSW5jb21wbGV0ZVJlbmRlclJlc3BvbnNlEjgKEHJlbmRlcl9yZXNwb25zZXMYASADKAsyHi5zZXJ2ZXJqcy5TaW5nbGVSZW5kZXJSZXNwb25zZRIVCg1pc19pbmNvbXBsZXRlGAIgASgIYgZwcm90bzM", [file_common]);
 
 /**
  * @generated from message serverjs.InitializeInfo
@@ -110,6 +110,35 @@ export const SingleRenderResponseSchema: GenMessage<SingleRenderResponse> = /*@_
   messageDesc(file_server_js, 2);
 
 /**
+ * @generated from message serverjs.RootRenderResponse
+ */
+export type RootRenderResponse = Message<"serverjs.RootRenderResponse"> & {
+  /**
+   * @generated from oneof serverjs.RootRenderResponse.response
+   */
+  response: {
+    /**
+     * @generated from field: serverjs.MaybeIncompleteRenderResponse success = 1;
+     */
+    value: MaybeIncompleteRenderResponse;
+    case: "success";
+  } | {
+    /**
+     * @generated from field: string error_message = 2;
+     */
+    value: string;
+    case: "errorMessage";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message serverjs.RootRenderResponse.
+ * Use `create(RootRenderResponseSchema)` to create a new message.
+ */
+export const RootRenderResponseSchema: GenMessage<RootRenderResponse> = /*@__PURE__*/
+  messageDesc(file_server_js, 3);
+
+/**
  * @generated from message serverjs.MaybeIncompleteRenderResponse
  */
 export type MaybeIncompleteRenderResponse = Message<"serverjs.MaybeIncompleteRenderResponse"> & {
@@ -129,5 +158,5 @@ export type MaybeIncompleteRenderResponse = Message<"serverjs.MaybeIncompleteRen
  * Use `create(MaybeIncompleteRenderResponseSchema)` to create a new message.
  */
 export const MaybeIncompleteRenderResponseSchema: GenMessage<MaybeIncompleteRenderResponse> = /*@__PURE__*/
-  messageDesc(file_server_js, 3);
+  messageDesc(file_server_js, 4);
 

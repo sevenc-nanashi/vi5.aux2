@@ -231,12 +231,36 @@ impl RenderLoop {
                 return std::ops::ControlFlow::Break(());
             };
             let response = match read_message_from_image::<
-                crate::protocol::serverjs::MaybeIncompleteRenderResponse,
+                crate::protocol::serverjs::RootRenderResponse,
             >(buffer)
             {
                 Ok(resp) => resp,
                 Err(e) => {
                     tracing::error!("Failed to decode BatchRenderResponse: {}", e);
+                    return std::ops::ControlFlow::Break(());
+                }
+            };
+
+            let response = match response.response {
+                Some(crate::protocol::serverjs::root_render_response::Response::Success(
+                    batch_response,
+                )) => batch_response,
+                Some(crate::protocol::serverjs::root_render_response::Response::ErrorMessage(
+                    err,
+                )) => {
+                    tracing::error!("Batch render error: {}", err);
+                    let _ = tx.send(anyhow::Ok(crate::protocol::libserver::RenderResponse {
+                        render_nonce: 0,
+                        response: Some(
+                            crate::protocol::libserver::render_response::Response::ErrorMessage(
+                                err,
+                            ),
+                        ),
+                    }));
+                    return std::ops::ControlFlow::Break(());
+                }
+                _ => {
+                    tracing::error!("Invalid RootRenderResponse: missing BatchRenderResponse");
                     return std::ops::ControlFlow::Break(());
                 }
             };
@@ -260,7 +284,7 @@ impl RenderLoop {
                                 .copy_from_slice(&buffer[buffer_start..buffer_end]);
 
                         }
-                        let _ = tx.send(crate::protocol::libserver::RenderResponse {
+                        let _ = tx.send(anyhow::Ok(crate::protocol::libserver::RenderResponse {
                             render_nonce: single_render_response.nonce,
                             response: Some(
                                 crate::protocol::libserver::render_response::Response::Success(
@@ -271,19 +295,19 @@ impl RenderLoop {
                                     },
                                 ),
                             ),
-                        });
+                        }));
                     }
                     crate::protocol::serverjs::single_render_response::Response::ErrorMessage(
                         err,
                     ) => {
-                        let _ = tx.send(crate::protocol::libserver::RenderResponse {
+                        let _ = tx.send(anyhow::Ok(crate::protocol::libserver::RenderResponse {
                             render_nonce: single_render_response.nonce,
                             response: Some(
                                 crate::protocol::libserver::render_response::Response::ErrorMessage(
                                     err,
                                 ),
                             ),
-                        });
+                        }));
                     }
                 }
             }
@@ -336,7 +360,7 @@ impl RenderLoop {
                     }
                 }
                 Ok(response) => {
-                    render_responses.push(response);
+                    render_responses.push(response?);
                 }
             }
         }
@@ -347,7 +371,7 @@ impl RenderLoop {
     pub async fn purge_cache(&self) -> anyhow::Result<()> {
         self.assert_initialized().await?;
         PAINT_CALLBACKS.clear();
-        let js = "if (window.__vi5__ && typeof window.__vi5__.purgeCache === 'function') { window.__vi5__.purgeCache(); }";
+        let js = "window.__vi5__.purgeCache();";
         self.browser.main_frame().unwrap().execute_java_script(
             Some(&cef::CefString::from(js)),
             None,

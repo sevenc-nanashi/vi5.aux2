@@ -25,6 +25,13 @@ message SingleRenderResponse {
   }
 }
 
+message RootRenderResponse {
+  oneof response {
+    MaybeIncompleteRenderResponse success = 1;
+    string error_message = 2;
+  }
+}
+
 message MaybeIncompleteRenderResponse {
   repeated SingleRenderResponse render_responses = 1;
   bool is_incomplete = 2;

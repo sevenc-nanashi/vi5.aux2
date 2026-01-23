@@ -18,6 +18,8 @@ import { vi5Log } from "./log";
 import {
   InitializeInfoSchema,
   MaybeIncompleteRenderResponseSchema,
+  RootRenderResponseSchema,
+  type MaybeIncompleteRenderResponse,
   type RendereredObjectInfo,
 } from "../gen/server-js_pb";
 import type {
@@ -292,66 +294,85 @@ export class Vi5Runtime {
   }
 
   async render(nonce: number, dataB64: string) {
-    const data = await fastBase64.toBytes(dataB64);
-    const renderPayload = protobuf.fromBinary(BatchRenderRequestSchema, data);
-    const jsResponses: JsRenderResponse[] = [];
+    try {
+      const data = await fastBase64.toBytes(dataB64);
+      const renderPayload = protobuf.fromBinary(BatchRenderRequestSchema, data);
+      const jsResponses: JsRenderResponse[] = [];
 
-    for (const req of renderPayload.renderRequests) {
-      try {
-        jsResponses.push(await this.doRender(req));
-      } catch (e) {
-        runtimeLog.error`Error during rendering object ${req.object}: ${e}`;
-        jsResponses.push({
-          type: "error",
-          renderNonce: req.renderNonce,
-          error: `Error during rendering: ${e}`,
-        });
-      }
-    }
-    const canvases = new Map<number, HTMLCanvasElement>();
-    for (const resp of jsResponses) {
-      if (resp.type === "success") {
-        canvases.set(resp.renderNonce, resp.canvas);
-      }
-    }
-    const packed = packCanvases(jsResponses);
-    for (const packedResponse of packed) {
-      this.drawMessage(
-        MaybeIncompleteRenderResponseSchema,
-        packedResponse,
-        nonce,
-      );
-      for (const renderResponse of packedResponse.renderResponses) {
-        if (renderResponse.response.case === "rendereredObjectInfo") {
-          const info = renderResponse.response.value as RendereredObjectInfo;
-          this.ctx.clearRect(info.x, info.y, info.width, info.height);
-          this.ctx.drawImage(
-            canvases.get(renderResponse.nonce)!,
-            0,
-            0,
-            info.width,
-            info.height,
-            info.x,
-            info.y,
-            info.width,
-            info.height,
-          );
-          runtimeLog.debug`Rendered object ${renderResponse.nonce} at (${info.x}, ${info.y}) with size ${info.width}x${info.height}`;
+      for (const req of renderPayload.renderRequests) {
+        try {
+          jsResponses.push(await this.doRender(req));
+        } catch (e) {
+          runtimeLog.error`Error during rendering object ${req.object}: ${e}`;
+          jsResponses.push({
+            type: "error",
+            renderNonce: req.renderNonce,
+            error: `Error during rendering: ${e}`,
+          });
         }
       }
+      const canvases = new Map<number, HTMLCanvasElement>();
+      for (const resp of jsResponses) {
+        if (resp.type === "success") {
+          canvases.set(resp.renderNonce, resp.canvas);
+        }
+      }
+      const packed = packCanvases(jsResponses);
+      for (const packedResponse of packed) {
+        this.renderSingleResponse(packedResponse, nonce, canvases);
+      }
+      for (const canvas of canvases.values()) {
+        disposeCanvas(canvas);
+      }
+      canvases.clear();
+    } catch (e) {
+      runtimeLog.error`Error during batch rendering: ${e}`;
+      this.drawMessage(
+        RootRenderResponseSchema,
+        {
+          response: {
+            case: "errorMessage",
+            value: `Error during batch rendering: ${e}`,
+          },
+        },
+        nonce,
+      );
     }
-    for (const canvas of canvases.values()) {
-      disposeCanvas(canvas);
+  }
+
+  private renderSingleResponse(
+    packedResponse: MaybeIncompleteRenderResponse,
+    nonce: number,
+    canvases: Map<number, HTMLCanvasElement>,
+  ) {
+    this.drawMessage(
+      RootRenderResponseSchema,
+      {
+        response: {
+          case: "success",
+          value: packedResponse,
+        },
+      },
+      nonce,
+    );
+    for (const renderResponse of packedResponse.renderResponses) {
+      if (renderResponse.response.case === "rendereredObjectInfo") {
+        const info = renderResponse.response.value as RendereredObjectInfo;
+        this.ctx.clearRect(info.x, info.y, info.width, info.height);
+        this.ctx.drawImage(
+          canvases.get(renderResponse.nonce)!,
+          0,
+          0,
+          info.width,
+          info.height,
+          info.x,
+          info.y,
+          info.width,
+          info.height,
+        );
+        runtimeLog.debug`Rendered object ${renderResponse.nonce} at (${info.x}, ${info.y}) with size ${info.width}x${info.height}`;
+      }
     }
-    canvases.clear();
-    // this.drawMessage(
-    //   MaybeIncompleteRenderResponseSchema,
-    //   {
-    //     renderResponses: renderResponses,
-    //     isIncomplete: false,
-    //   },
-    //   nonce,
-    // );
   }
 
   purgeCache() {
