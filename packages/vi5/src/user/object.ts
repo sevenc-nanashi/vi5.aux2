@@ -62,6 +62,6 @@ export type Vi5Object<T extends ParameterDefinitions> = {
   label: string;
 
   parameters: T;
-  setup: (ctx: Vi5Context, params: InferParameters<T>) => Promise<p5.Renderer> | p5.Renderer;
-  draw: (ctx: Vi5Context, params: InferParameters<T>) => void;
+  setup: (ctx: Vi5Context, p: p5, params: InferParameters<T>) => Promise<p5.Renderer> | p5.Renderer;
+  draw: (ctx: Vi5Context, p: p5, params: InferParameters<T>) => void;
 };

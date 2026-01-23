@@ -2,6 +2,11 @@ import p5 from "p5";
 import type { FrameInfo } from "../gen/common_pb";
 p5.disableFriendlyErrors = true;
 
+function setProperty<T extends keyof p5>(p: p5, property: T, value: p5[T]) {
+  // @ts-expect-error: private method access
+  p._setProperty(property, value);
+}
+
 export class Vi5Context {
   #p5Instance: p5 | null = null;
   #mainCanvas: p5.Renderer | null = null;
@@ -60,6 +65,8 @@ export class Vi5Context {
   /** @internal */
   setFrameInfo(frameInfo: FrameInfo) {
     this.#frameInfo = frameInfo;
+    setProperty(this.p, "frameCount", frameInfo.currentFrame);
+    setProperty(this.p, "deltaTime", 1000 / frameInfo.framerate);
   }
 
   /** @internal */

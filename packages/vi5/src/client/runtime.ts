@@ -76,7 +76,7 @@ async function initializeContext<T extends ParameterDefinitions>(
     ctx.initialize(sketch);
     ctx.setFrameInfo(renderRequest.frameInfo!);
     sketch.setup = () => {
-      const setup = object.setup(ctx, parameter);
+      const setup = object.setup(ctx, ctx.p, parameter);
       if (setup instanceof Promise) {
         return setup.then(() => {
           contexts.set(id, ctx);
@@ -381,7 +381,7 @@ export class Vi5Runtime {
       };
     }
     ctx.setFrameInfo(request.frameInfo!);
-    object.draw(ctx, params);
+    object.draw(ctx, ctx.p, params);
     const p5Canvas = ctx.mainCanvas;
     return {
       type: "success",

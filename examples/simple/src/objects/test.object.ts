@@ -1,4 +1,4 @@
-import { colorToP5Tuple, defineObject, NumberStep } from "vi5";
+import { colorToP5Tuple, defineObject, numberStep } from "vi5";
 import p5 from "p5";
 
 export default defineObject({
@@ -7,7 +7,7 @@ export default defineObject({
   parameters: {
     radius: {
       type: "number",
-      step: NumberStep.ONE,
+      step: numberStep["1"],
       min: 10,
       max: 283,
       default: 100,
@@ -19,16 +19,16 @@ export default defineObject({
       label: "Color",
     },
   },
-  setup(ctx, _params) {
+  setup(ctx, _p, _params) {
     return ctx.createCanvas(200, 200, p5.P2D);
   },
-  draw(ctx, params) {
+  draw(ctx, p, params) {
     console.log("Drawing with params:", params)
-    ctx.p.background(100);
-    ctx.p.fill(...colorToP5Tuple(params.color));
-    ctx.p.textAlign(ctx.p.CENTER, ctx.p.CENTER);
-    ctx.p.textSize(16);
-    ctx.p.text(`Frame: ${ctx.frameInfo.currentFrame}`, 100, 20);
-    ctx.p.ellipse(100, ctx.frameInfo.currentFrame, params.radius, params.radius);
+    p.background(100);
+    p.fill(...colorToP5Tuple(params.color));
+    p.textAlign(ctx.p.CENTER, ctx.p.CENTER);
+    p.textSize(16);
+    p.text(`Frame: ${ctx.frameInfo.currentFrame}`, 100, 20);
+    p.ellipse(100, ctx.frameInfo.currentFrame, params.radius, params.radius);
   },
 });
