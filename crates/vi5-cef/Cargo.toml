@@ -5,12 +5,12 @@ edition = "2024"
 
 [dependencies]
 prost = "0.14.3"
-tonic = { version = "0.14.2", features = ["transport"] }
-thiserror = "2.0.16"
-tonic-prost = "0.14.2"
+tonic = { version = "0.14.3", features = ["transport"] }
+thiserror = "2.0.18"
+tonic-prost = "0.14.3"
 tokio = { version = "1.49.0", features = ["time"] }
 tracing = "0.1.44"
 tap = "1.0.1"
 
 [build-dependencies]
-tonic-prost-build = "0.14.2"
+tonic-prost-build = "0.14.3"

@@ -5,27 +5,27 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
-cef = { version = "143.7.1", features = ["accelerated_osr"] }
+cef = { version = "144.2.0", features = ["accelerated_osr"] }
 image = "0.25.9"
 pollster = "0.4.0"
 rand = "0.9.2"
 wgpu = "28"
 env_logger = "0.11.8"
 prost = "0.14.3"
-tonic = "0.14.2"
-tonic-prost = "0.14.2"
+tonic = "0.14.3"
+tonic-prost = "0.14.3"
 tokio = { version = "1.49.0", features = ["process", "rt-multi-thread", "signal"] }
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 tracing = "0.1.44"
 dashmap = "6.1.0"
 base64 = "0.22.1"
-tonic-reflection = "0.14.2"
+tonic-reflection = "0.14.3"
 color-backtrace = "0.7.2"
 futures = "0.3.31"
-clap = { version = "4.5.54", features = ["derive"] }
+clap = { version = "4.5.55", features = ["derive"] }
 dirs = "6.0.0"
 
 [build-dependencies]
 anyhow = "1.0.100"
 prost-build = "0.14.3"
-tonic-prost-build = "0.14.2"
+tonic-prost-build = "0.14.3"
