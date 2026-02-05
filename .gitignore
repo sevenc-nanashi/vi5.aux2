@@ -165,3 +165,7 @@ dist
 NUL
 paint_buffer/*.png
 **/paint_buffer/*.png
+
+# AviUtl2 CLI
+/.aviutl2-cli
+/release

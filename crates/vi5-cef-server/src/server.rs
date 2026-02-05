@@ -1,7 +1,9 @@
+use std::sync::Arc;
+
 pub struct MainServer {
     render_loop: crate::render_loop::RenderLoop,
     processes: tokio::sync::Mutex<Vec<tokio::process::Child>>,
-    shutdown_tx: tokio::sync::Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
+    shutdown_tx: tokio::sync::Mutex<Option<Arc<tokio::sync::mpsc::UnboundedSender<()>>>>,
 }
 
 #[tonic::async_trait]
@@ -120,7 +122,7 @@ impl crate::protocol::libserver::lib_server_server::LibServer for MainServer {
 impl MainServer {
     pub fn new(
         render_loop: crate::render_loop::RenderLoop,
-        shutdown_tx: tokio::sync::oneshot::Sender<()>,
+        shutdown_tx: Arc<tokio::sync::mpsc::UnboundedSender<()>>,
     ) -> Self {
         Self {
             render_loop,

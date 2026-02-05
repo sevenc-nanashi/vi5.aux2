@@ -28,7 +28,7 @@ export default defineObject({
     p.fill(...colorToP5Tuple(params.color));
     p.textAlign(ctx.p.CENTER, ctx.p.CENTER);
     p.textSize(16);
-    p.text(`Frame: ${ctx.frameInfo.currentFrame}`, 100, 20);
+    p.text(`Frame: ${p.frameCount}`, 100, 20);
     p.ellipse(100, ctx.frameInfo.currentFrame, params.radius, params.radius);
   },
 });

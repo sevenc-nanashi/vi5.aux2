@@ -23,15 +23,12 @@ struct Vi5Aux2 {
     plugin: aviutl2::generic::SubPlugin<crate::module::InternalModule>,
 }
 
+static CURRENT_PROJECT_FILE: std::sync::Mutex<Option<std::path::PathBuf>> =
+    std::sync::Mutex::new(None);
 static VAR_PREFIX: &str = "VI5_AUX2_";
 
 fn get_script_dir(project_name: &str) -> std::path::PathBuf {
-    process_path::get_dylib_path()
-        .expect("Failed to get dylib path (unreachable on Windows)")
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
+    aviutl2::config::app_data_path()
         .join("Script")
         .join(format!("vi5.aux2_{}", project_name))
 }
@@ -42,7 +39,19 @@ static EDIT_HANDLE: OnceLock<aviutl2::generic::EditHandle> = OnceLock::new();
 impl Vi5Aux2 {
     #[config(name = "[vi5.aux2] プロジェクトフォルダの設定")]
     fn select_project_dir(&mut self, _hwnd: aviutl2::Win32WindowHandle) -> anyhow::Result<()> {
+        let current_dir = match CURRENT_PROJECT_FILE.lock().unwrap().as_ref() {
+            Some(path) => {
+                let path = std::path::Path::new(&path);
+                if let Some(parent) = path.parent() {
+                    parent.to_path_buf()
+                } else {
+                    "".into()
+                }
+            }
+            None => "".into(),
+        };
         let dir = rfd::FileDialog::new()
+            .set_directory(current_dir)
             .set_title("プロジェクトフォルダを選択してください")
             .pick_folder();
         let Some(dir) = dir else {
@@ -112,7 +121,7 @@ impl Vi5Aux2 {
         let client = server_guard.as_mut().map(|(_, client)| client).unwrap();
 
         let info = client
-            .initialize(&dir)
+            .initialize(&dir, Some(std::time::Duration::from_secs(60)))
             .await
             .map_err(|e| anyhow::anyhow!("vi5-cef クライアントの初期化に失敗しました: {}", e))?;
         log::info!("vi5-cef initialized successfully.");
@@ -137,8 +146,7 @@ impl Vi5Aux2 {
             let param_defs = object
                 .parameter_definitions
                 .iter()
-                .enumerate()
-                .map(|(i, param)| {
+                .map(|param| {
                     let key = &param.key;
                     let label = &param.label;
                     match param.parameter_type {
@@ -187,7 +195,7 @@ impl Vi5Aux2 {
                                 _ => min,
                             };
                             format!(
-                                r#"--track{i}:{label},{min_str},{max_str},{default_value},{step}"#
+                                r#"--track@{VAR_PREFIX}{key}:{label},{min_str},{max_str},{default_value},{step}"#
                             )
                         }
                         vi5_cef::ParameterType::Color => {
@@ -222,12 +230,11 @@ impl Vi5Aux2 {
             let values = object
                 .parameter_definitions
                 .iter()
-                .enumerate()
-                .map(|(i, param)| {
+                .map(|param| {
                     let key = &param.key;
                     match param.parameter_type {
                         vi5_cef::ParameterType::Number { .. } => {
-                            format!(r#"obj.track{i} or 0"#)
+                            format!(r#"{VAR_PREFIX}{key}"#)
                         }
                         _ => {
                             format!(r#"{VAR_PREFIX}{key}"#)
@@ -285,6 +292,8 @@ impl Vi5Aux2 {
                     "Comparing existing and new script contents for object '{}'",
                     object.id
                 );
+                log::debug!("Existing headers:\n{}", existing_headers);
+                log::debug!("New headers:\n{}", new_headers);
                 if existing_content == script_content {
                     log::info!(
                         "Script file for object '{}' is up to date: {:?}",
@@ -364,6 +373,8 @@ impl Vi5Aux2 {
             .arg(port.to_string())
             .arg("--hardware-acceleration")
             .arg("--devtools")
+            .arg("--parent-process")
+            .arg(std::process::id().to_string())
             .env("PATH", path)
             .env("NO_COLOR", "1")
             .env("RUST_LOG", "info,vi5_cef=trace")
@@ -401,8 +412,7 @@ impl Vi5Aux2 {
             }
 
             res = vi5_cef::Client::connect(
-                format!("http://localhost:{}", port),
-                Some(std::time::Duration::from_secs(60)),
+                format!("http://localhost:{}", port)
             ) => {
                 res.map_err(anyhow::Error::from)
             }
@@ -508,6 +518,7 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
     }
 
     fn on_project_load(&mut self, project: &mut aviutl2::generic::ProjectFile) {
+        *CURRENT_PROJECT_FILE.lock().unwrap() = project.get_path();
         match project.deserialize::<String>("project_dir") {
             Ok(dir) => {
                 if dir.is_empty() {
@@ -527,7 +538,7 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
 
     fn on_clear_cache(&mut self, _edit_section: &aviutl2::generic::EditSection) {
         crate::module::clear_render_cache();
-        tokio::spawn({
+        self.get_runtime_handle().spawn({
             let server = Arc::clone(&self.server);
             async move {
                 let mut server = server.lock().await;
@@ -543,6 +554,7 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
     }
 
     fn on_project_save(&mut self, project: &mut aviutl2::generic::ProjectFile) {
+        *CURRENT_PROJECT_FILE.lock().unwrap() = project.get_path();
         project.clear_params();
         if let Err(e) = project.serialize(
             "project_dir",

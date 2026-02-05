@@ -26,3 +26,7 @@ backend = "core:bun"
 version = "1.4.3"
 backend = "github:fullstorydev/grpcui"
 "platforms.windows-x64" = { checksum = "sha256:6df6fcebb009e7af10081d8113c57b95e4247c457a6cb6d7abc609cd8cd43be1", url = "https://github.com/fullstorydev/grpcui/releases/download/v1.4.3/grpcui_1.4.3_windows_x86_64.zip", url_api = "https://api.github.com/repos/fullstorydev/grpcui/releases/assets/236615348"}
+
+[[tools."github:sevenc-nanashi/aviutl2-cli"]]
+version = "0.3.0"
+backend = "github:sevenc-nanashi/aviutl2-cli"

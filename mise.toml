@@ -4,3 +4,4 @@ lockfile = true
 [tools]
 bun = "latest"
 "github:fullstorydev/grpcui" = "latest"
+"github:sevenc-nanashi/aviutl2-cli" = { version = "latest", bin = "au2.exe" }

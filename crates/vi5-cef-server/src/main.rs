@@ -32,6 +32,10 @@ pub struct Args {
     /// Port to listen on
     #[clap(long, default_value = "50051")]
     port: u16,
+
+    /// Parent process (will exit if parent process exits)
+    #[clap(long)]
+    parent_process: Option<u32>,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -81,12 +85,43 @@ fn main() -> anyhow::Result<()> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
-        .block_on(main_server(render_loop, cli_args.port))?;
+        .block_on(main_server(
+            render_loop,
+            cli_args.port,
+            cli_args.parent_process,
+        ))?;
     Ok(())
 }
 
-pub async fn main_server(render_loop: RenderLoop, port: u16) -> anyhow::Result<()> {
-    let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+async fn watch_parent_process(parent_pid: u32, sender: Arc<tokio::sync::mpsc::UnboundedSender<()>>) {
+    let check_interval = tokio::time::Duration::from_secs(5);
+    loop {
+        if sysinfo::System::new_all()
+            .process((parent_pid as usize).into())
+            .is_none()
+            || sender.is_closed()
+        {
+            tracing::info!("Parent process {} has exited, shutting down.", parent_pid);
+            let _ = sender.send(());
+            break;
+        }
+        tokio::time::sleep(check_interval).await;
+    }
+}
+
+pub async fn main_server(
+    render_loop: RenderLoop,
+    port: u16,
+    parent_pid: Option<u32>,
+) -> anyhow::Result<()> {
+    let (shutdown_tx, mut shutdown_rx) = tokio::sync::mpsc::unbounded_channel();
+    let shutdown_tx = Arc::new(shutdown_tx);
+    if let Some(ppid) = parent_pid {
+        let shutdown_tx_clone = shutdown_tx.clone();
+        tokio::spawn(async move {
+            watch_parent_process(ppid, shutdown_tx_clone).await;
+        });
+    }
     let server = server::MainServer::new(render_loop, shutdown_tx);
     let addr = format!("[::1]:{}", port).parse().unwrap();
     tracing::info!("Starting gRPC server on {}", addr);
@@ -105,7 +140,7 @@ pub async fn main_server(render_loop: RenderLoop, port: u16) -> anyhow::Result<(
                 _ = tokio::signal::ctrl_c() => {
                     tracing::info!("Shutting down gRPC server");
                 }
-                _ = shutdown_rx => {
+                _ = shutdown_rx.recv() => {
                     tracing::info!("Received shutdown request");
                 }
             }

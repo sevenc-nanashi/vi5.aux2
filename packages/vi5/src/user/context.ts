@@ -3,8 +3,7 @@ import type { FrameInfo } from "../gen/common_pb";
 p5.disableFriendlyErrors = true;
 
 function setProperty<T extends keyof p5>(p: p5, property: T, value: p5[T]) {
-  // @ts-expect-error: private method access
-  p._setProperty(property, value);
+  p[property] = value;
 }
 
 export class Vi5Context {

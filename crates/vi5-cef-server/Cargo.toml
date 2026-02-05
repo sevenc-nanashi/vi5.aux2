@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
-cef = { version = "144.2.0", features = ["accelerated_osr"] }
+cef = { version = "=144.2.0", features = ["accelerated_osr"] }
 image = "0.25.9"
 pollster = "0.4.0"
 rand = "0.9.2"
@@ -24,6 +24,7 @@ color-backtrace = "0.7.2"
 futures = "0.3.31"
 clap = { version = "4.5.55", features = ["derive"] }
 dirs = "6.0.0"
+sysinfo = "0.38.0"
 
 [build-dependencies]
 anyhow = "1.0.100"

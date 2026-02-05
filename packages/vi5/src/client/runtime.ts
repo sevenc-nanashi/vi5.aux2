@@ -17,7 +17,6 @@ import {
 import { vi5Log } from "./log";
 import {
   InitializeInfoSchema,
-  MaybeIncompleteRenderResponseSchema,
   RootRenderResponseSchema,
   type MaybeIncompleteRenderResponse,
   type RendereredObjectInfo,
@@ -303,7 +302,7 @@ export class Vi5Runtime {
         try {
           jsResponses.push(await this.doRender(req));
         } catch (e) {
-          runtimeLog.error`Error during rendering object ${req.object}: ${e}`;
+          runtimeLog.error`Error during rendering object ${req.object}: ${String(e)}`;
           jsResponses.push({
             type: "error",
             renderNonce: req.renderNonce,

@@ -41,7 +41,6 @@ local param_values = {
 local param_types = {
   --PARAMETER_TYPES--
 }
-local next_frame = obj.time + (1 / obj.framerate)
 local function serialize_param_at(frame_offset)
   local serialized_params = {};
   for i = 1, #params_keys do
@@ -57,7 +56,7 @@ local function serialize_param_at(frame_offset)
     elseif type(v) == "number" then
       serialized_params[key] = {
         type = kind,
-        value = obj.getvalue(i - 1, obj.time + frame_offset * (1 / obj.framerate)) or value
+        value = obj.getvalue(string:format("track.VI5_AUX2_%s", key), obj.time + frame_offset * (1 / obj.framerate)) or value
       }
     else
       serialized_params[key] = { type = kind, value = value }

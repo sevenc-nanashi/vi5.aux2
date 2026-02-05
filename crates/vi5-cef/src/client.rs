@@ -2,6 +2,7 @@ use crate::convert::ConversionError;
 use crate::protocol;
 use crate::types::{InitializeResponse, RenderRequest, RenderResponse};
 use tap::prelude::*;
+use tonic::IntoRequest;
 
 type LibServerClient =
     protocol::libserver::lib_server_client::LibServerClient<tonic::transport::Channel>;
@@ -13,23 +14,12 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn connect<D>(
-        dst: D,
-        timeout: Option<std::time::Duration>,
-    ) -> Result<Self, tonic::transport::Error>
+    pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
     where
         D: TryInto<tonic::transport::Endpoint>,
         D::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
     {
-        let inner =
-            LibServerClient::connect(tonic::transport::Endpoint::new(dst)?.pipe(|endpoint| {
-                if let Some(timeout) = timeout {
-                    endpoint.connect_timeout(timeout)
-                } else {
-                    endpoint
-                }
-            }))
-            .await?;
+        let inner = LibServerClient::connect(tonic::transport::Endpoint::new(dst)?).await?;
         Ok(Self {
             inner,
             next_nonce: 1,
@@ -39,10 +29,15 @@ impl Client {
     pub async fn initialize(
         &mut self,
         root_path: impl Into<String>,
+        timeout: Option<std::time::Duration>,
     ) -> Result<InitializeResponse, tonic::Status> {
         let request = protocol::libserver::InitializeRequest {
             root_path: root_path.into(),
         };
+        let mut request = request.into_request();
+        if let Some(timeout) = timeout {
+            request.set_timeout(timeout);
+        }
         let response = self.inner.initialize(request).await?.into_inner();
         InitializeResponse::try_from(response).map_err(ConversionError::into_status)
     }

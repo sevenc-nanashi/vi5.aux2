@@ -1,0 +1,34 @@
+#:schema ./.aviutl2-cli/aviutl2.schema.json
+# 設定ファイルについては https://github.com/sevenc-nanashi/aviutl2-cli を参照してください。
+[project]
+name = "vi5-aux2"
+version = "0.1.0"
+
+[artifacts.vi5_aux2]
+enabled = true
+destination = "Plugin/vi5/vi5.aux2"
+
+[artifacts.vi5_aux2.profiles.debug]
+build = "cargo build"
+source = "target/debug/vi5_aux2.dll"
+enabled = true
+
+[artifacts.vi5_aux2.profiles.release]
+build = ["cargo build --release"]
+source = "target/release/vi5_aux2.dll"
+enabled = true
+
+[development]
+aviutl2_version = "2.00beta31"
+# prebuild = "echo prebuild"
+# postbuild = "echo postbuild"
+
+[preview]
+# aviutl2_version = "2.00beta31"
+# prebuild = "echo prebuild"
+# postbuild = "echo postbuild"
+
+[release]
+package_template = "package_template.txt"
+# prebuild = "echo prebuild"
+# postbuild = "echo postbuild"
