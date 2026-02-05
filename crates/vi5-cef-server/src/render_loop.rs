@@ -4,10 +4,12 @@ use std::time::Duration;
 use base64::Engine;
 use cef::{ImplBrowser, ImplFrame};
 use prost::Message;
+use tokio::sync::broadcast;
 
 type PaintCallback = dyn FnMut(&[u8], usize, usize) -> std::ops::ControlFlow<()> + Send + Sync;
 static PAINT_CALLBACKS: std::sync::LazyLock<dashmap::DashMap<u32, Box<PaintCallback>>> =
     std::sync::LazyLock::new(dashmap::DashMap::new);
+const NOTIFICATION_NONCE: u32 = 1;
 
 fn maybe_temporary_save_buffer(
     buffer: &[u8],
@@ -102,14 +104,23 @@ pub struct RenderLoop {
     browser: cef::Browser,
     initialized:
         Arc<std::sync::Mutex<Option<anyhow::Result<crate::protocol::serverjs::InitializeInfo>>>>,
+    notification_tx: broadcast::Sender<crate::protocol::libserver::Notification>,
 }
 
 impl RenderLoop {
     pub fn new(browser: cef::Browser) -> Self {
+        let (notification_tx, _) = broadcast::channel(128);
         Self {
             browser,
             initialized: Arc::new(std::sync::Mutex::new(None)),
+            notification_tx,
         }
+    }
+
+    pub fn subscribe_notifications(
+        &self,
+    ) -> broadcast::Receiver<crate::protocol::libserver::Notification> {
+        self.notification_tx.subscribe()
     }
 
     pub async fn assert_initialized(&self) -> anyhow::Result<()> {
@@ -155,6 +166,38 @@ impl RenderLoop {
             *initialized = None;
         }
         PAINT_CALLBACKS.clear();
+        PAINT_CALLBACKS.insert(
+            NOTIFICATION_NONCE,
+            Box::new({
+                let notification_tx = self.notification_tx.clone();
+                move |buffer, _, _| {
+                    match read_raw_message_from_image(buffer) {
+                        Ok(payload) => {
+                            if payload.is_empty() {
+                                tracing::warn!("Received empty notification payload");
+                                return std::ops::ControlFlow::Continue(());
+                            }
+                            let level = payload[0] as i32;
+                            let message = match String::from_utf8(payload[1..].to_vec()) {
+                                Ok(message) => message,
+                                Err(e) => {
+                                    tracing::warn!("Invalid notification message: {}", e);
+                                    return std::ops::ControlFlow::Continue(());
+                                }
+                            };
+                            let _ = notification_tx.send(crate::protocol::libserver::Notification {
+                                level,
+                                message,
+                            });
+                        }
+                        Err(e) => {
+                            tracing::error!("Failed to decode notification payload: {}", e);
+                        }
+                    }
+                    std::ops::ControlFlow::Continue(())
+                }
+            }),
+        );
         PAINT_CALLBACKS.insert(
             0,
             Box::new({
@@ -226,6 +269,7 @@ impl RenderLoop {
         };
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
         let mut maybe_tx = Some(tx);
+        let notification_tx = self.notification_tx.clone();
         let callback = Box::new(move |buffer: &[u8], width: usize, _height: usize| {
             let Some(tx) = &maybe_tx else {
                 return std::ops::ControlFlow::Break(());
@@ -264,6 +308,13 @@ impl RenderLoop {
                     return std::ops::ControlFlow::Break(());
                 }
             };
+
+            for notification in response.notifications {
+                let _ = notification_tx.send(crate::protocol::libserver::Notification {
+                    level: notification.level,
+                    message: notification.message,
+                });
+            }
 
             for single_render_response in response.render_responses {
                 match single_render_response.response.unwrap() {
@@ -387,6 +438,18 @@ fn read_message_from_image<T: Message + Default>(buffer: &[u8]) -> anyhow::Resul
     // A: alpha byte (ignored)
     // L: length bytes (little-endian u32)
     // M: message bytes
+    let message_buffer = read_raw_message_from_image(buffer)?;
+    let message = T::decode(&message_buffer[..])?;
+    Ok(message)
+}
+
+fn read_raw_message_from_image(buffer: &[u8]) -> anyhow::Result<Vec<u8>> {
+    // H1 H2 H3 A_ N1 N2 N3 A_ N4 L1 L2 A_ L3 L4 M1 A_ M2 M3 M4 A_ M5 ...
+    // H: header bytes
+    // N: nonce bytes
+    // A: alpha byte (ignored)
+    // L: length bytes (little-endian u32)
+    // M: message bytes
     let message_length =
         u32::from_le_bytes([buffer[9], buffer[10], buffer[12], buffer[13]]) as usize;
     tracing::debug!("Decoding message of length {}", message_length);
@@ -396,6 +459,5 @@ fn read_message_from_image<T: Message + Default>(buffer: &[u8]) -> anyhow::Resul
         let message_byte_index = 11 + i;
         message_buffer[i] = buffer[4 * (message_byte_index / 3) + (message_byte_index % 3)];
     }
-    let message = T::decode(&message_buffer[..])?;
-    Ok(message)
+    Ok(message_buffer)
 }

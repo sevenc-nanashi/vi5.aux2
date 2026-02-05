@@ -23,12 +23,13 @@ export default defineObject({
     return ctx.createCanvas(200, 200, p5.P2D);
   },
   draw(ctx, p, params) {
-    console.log("Drawing with params:", params)
+    console.log("Drawing with params:", params);
     p.background(100);
     p.fill(...colorToP5Tuple(params.color));
     p.textAlign(ctx.p.CENTER, ctx.p.CENTER);
     p.textSize(16);
     p.text(`Frame: ${p.frameCount}`, 100, 20);
     p.ellipse(100, ctx.frameInfo.currentFrame, params.radius, params.radius);
+    ctx.notify("info", "Hello");
   },
 });

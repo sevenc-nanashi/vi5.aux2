@@ -15,6 +15,7 @@ prost = "0.14.3"
 tonic = "0.14.3"
 tonic-prost = "0.14.3"
 tokio = { version = "1.49.0", features = ["process", "rt-multi-thread", "signal"] }
+tokio-stream = { version = "0.1.17", features = ["sync"] }
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 tracing = "0.1.44"
 dashmap = "6.1.0"

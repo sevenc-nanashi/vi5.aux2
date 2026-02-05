@@ -1,4 +1,8 @@
+use std::pin::Pin;
 use std::sync::Arc;
+
+use futures::StreamExt;
+use tokio_stream::wrappers::BroadcastStream;
 
 pub struct MainServer {
     render_loop: crate::render_loop::RenderLoop,
@@ -8,6 +12,15 @@ pub struct MainServer {
 
 #[tonic::async_trait]
 impl crate::protocol::libserver::lib_server_server::LibServer for MainServer {
+    type SubscribeNotificationsStream = Pin<
+        Box<
+            dyn futures::Stream<
+                    Item = Result<crate::protocol::libserver::Notification, tonic::Status>,
+                > + Send
+                + 'static,
+        >,
+    >;
+
     async fn initialize(
         &self,
         request: tonic::Request<crate::protocol::libserver::InitializeRequest>,
@@ -105,6 +118,23 @@ impl crate::protocol::libserver::lib_server_server::LibServer for MainServer {
             .await
             .map_err(|e| tonic::Status::internal(format!("Purge cache failed: {}", e)))?;
         Ok(tonic::Response::new(crate::protocol::common::Void {}))
+    }
+
+    async fn subscribe_notifications(
+        &self,
+        _request: tonic::Request<crate::protocol::common::Void>,
+    ) -> Result<tonic::Response<Self::SubscribeNotificationsStream>, tonic::Status> {
+        let rx = self.render_loop.subscribe_notifications();
+        let stream = BroadcastStream::new(rx).filter_map(|item| async move {
+            match item {
+                Ok(notification) => Some(Ok(notification)),
+                Err(err) => {
+                    tracing::warn!("Notification stream lagged: {}", err);
+                    None
+                }
+            }
+        });
+        Ok(tonic::Response::new(Box::pin(stream)))
     }
 
     async fn shutdown(

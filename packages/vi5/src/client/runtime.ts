@@ -18,6 +18,8 @@ import { vi5Log } from "./log";
 import {
   InitializeInfoSchema,
   RootRenderResponseSchema,
+  NotificationSchema,
+  NotificationLevel,
   type MaybeIncompleteRenderResponse,
   type RendereredObjectInfo,
 } from "../gen/server-js_pb";
@@ -32,6 +34,13 @@ import { packCanvases, type JsRenderResponse } from "./packCanvas";
 import p5 from "p5";
 
 const runtimeLog = vi5Log.getChild("Vi5Runtime");
+type NotificationLevelKey = keyof typeof notificationLevelMap;
+const notificationNonce = 1;
+const notificationLevelMap = {
+  info: NotificationLevel.INFO,
+  warn: NotificationLevel.WARN,
+  error: NotificationLevel.ERROR,
+} as const;
 
 const isMessage = <Desc extends protobuf.DescMessage>(
   data: protobuf.MessageShape<Desc> | protobuf.MessageInitShape<Desc>,
@@ -256,6 +265,8 @@ export class Vi5Runtime {
   readonly canvas: HTMLCanvasElement;
   readonly ctx: CanvasRenderingContext2D;
   readonly objects = new Map<string, Vi5Object<ParameterDefinitions>>();
+  #notificationQueue: protobuf.MessageShape<typeof NotificationSchema>[] = [];
+  #renderingDepth = 0;
 
   constructor(public projectName: string) {
     this.canvas = document.getElementById("vi5-canvas") as HTMLCanvasElement;
@@ -293,6 +304,7 @@ export class Vi5Runtime {
   }
 
   async render(nonce: number, dataB64: string) {
+    this.#renderingDepth += 1;
     try {
       const data = await fastBase64.toBytes(dataB64);
       const renderPayload = protobuf.fromBinary(BatchRenderRequestSchema, data);
@@ -316,7 +328,8 @@ export class Vi5Runtime {
           canvases.set(resp.renderNonce, resp.canvas);
         }
       }
-      const packed = packCanvases(jsResponses);
+      const notifications = this.flushNotifications();
+      const packed = packCanvases(jsResponses, notifications);
       for (const packedResponse of packed) {
         this.renderSingleResponse(packedResponse, nonce, canvases);
       }
@@ -336,6 +349,8 @@ export class Vi5Runtime {
         },
         nonce,
       );
+    } finally {
+      this.#renderingDepth = Math.max(0, this.#renderingDepth - 1);
     }
   }
 
@@ -429,6 +444,10 @@ export class Vi5Runtime {
       schema,
       isMessage(data) ? data : protobuf.create(schema, data),
     );
+    this.drawRawMessage(message, nonce);
+  }
+
+  drawRawMessage(message: Uint8Array, nonce: number): void {
     const binaryLength = message.length;
     const payload = [
       255,
@@ -471,6 +490,30 @@ export class Vi5Runtime {
       pixelData.data[pixelIndex + 3] = 255;
     }
     this.ctx.putImageData(pixelData, 0, 0);
+  }
+
+  notify(level: NotificationLevelKey, message: string) {
+    const levelValue = notificationLevelMap[level];
+    if (this.#renderingDepth > 0) {
+      this.#notificationQueue.push(
+        protobuf.create(NotificationSchema, {
+          level: levelValue,
+          message,
+        }),
+      );
+    } else {
+      const messageBytes = new TextEncoder().encode(message);
+      const payload = new Uint8Array(1 + messageBytes.length);
+      payload[0] = levelValue;
+      payload.set(messageBytes, 1);
+      this.drawRawMessage(payload, notificationNonce);
+    }
+  }
+
+  private flushNotifications() {
+    const notifications = this.#notificationQueue;
+    this.#notificationQueue = [];
+    return notifications;
   }
 
   static get() {

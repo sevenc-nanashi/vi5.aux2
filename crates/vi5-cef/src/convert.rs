@@ -1,7 +1,8 @@
 use crate::protocol;
 use crate::types::{
     Color, FrameInfo, InitializeResponse, ObjectInfo, Parameter, ParameterDefinition,
-    ParameterType, ParameterValue, RenderRequest, RenderResponse, RenderResponseData,
+    Notification, NotificationLevel, ParameterType, ParameterValue, RenderRequest, RenderResponse,
+    RenderResponseData,
 };
 
 use crate::types::NumberStep;
@@ -18,6 +19,8 @@ pub enum ConversionError {
     MissingParameterTypeKind,
     #[error("invalid number step: {0}")]
     InvalidNumberStep(i32),
+    #[error("invalid notification level: {0}")]
+    InvalidNotificationLevel(i32),
 }
 
 impl ConversionError {
@@ -241,5 +244,30 @@ impl TryFrom<protocol::libserver::RenderResponse> for RenderResponse {
             render_nonce: value.render_nonce,
             response,
         })
+    }
+}
+
+impl TryFrom<protocol::libserver::Notification> for Notification {
+    type Error = ConversionError;
+
+    fn try_from(value: protocol::libserver::Notification) -> Result<Self, Self::Error> {
+        let level = NotificationLevel::try_from(value.level)?;
+        Ok(Self {
+            level,
+            message: value.message,
+        })
+    }
+}
+
+impl TryFrom<i32> for NotificationLevel {
+    type Error = ConversionError;
+
+    fn try_from(value: i32) -> Result<Self, ConversionError> {
+        match value {
+            0 => Ok(Self::Info),
+            1 => Ok(Self::Warn),
+            2 => Ok(Self::Error),
+            _ => Err(ConversionError::InvalidNotificationLevel(value)),
+        }
     }
 }

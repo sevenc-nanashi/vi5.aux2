@@ -38,8 +38,7 @@
     "@types/picomatch": "^4.0.2",
     "@types/yargs": "^17.0.35",
     "publint": "^0.3.16",
-    "unplugin-raw": "^0.6.4",
-    "vite-console-forward-plugin": "^2.0.1"
+    "unplugin-raw": "^0.6.4"
   },
   "peerDependencies": {
     "typescript": "^5"

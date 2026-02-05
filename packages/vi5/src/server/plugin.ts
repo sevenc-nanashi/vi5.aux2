@@ -44,6 +44,7 @@ export function createVi5Plugin(config: Config, restartServer: () => Promise<voi
             objectList: await Array.fromAsync(fs.glob("./src/**/*.object.ts")).then((files) =>
               files.map((f) => "/" + f.replace(/\\/g, "/")),
             ),
+            hookConsoleLog: config.hookConsoleLog ?? true,
           },
         },
         // resolve: {

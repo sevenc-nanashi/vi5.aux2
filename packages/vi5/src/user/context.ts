@@ -68,6 +68,10 @@ export class Vi5Context {
     setProperty(this.p, "deltaTime", 1000 / frameInfo.framerate);
   }
 
+  notify(level: "info" | "warn" | "error", message: string) {
+    window.__vi5__?.notify(level, message);
+  }
+
   /** @internal */
   teardown() {
     this.#mainCanvas?.remove();

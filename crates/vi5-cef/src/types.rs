@@ -131,3 +131,16 @@ pub enum RenderResponseData {
     },
     Error(String),
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NotificationLevel {
+    Info,
+    Warn,
+    Error,
+}
+
+#[derive(Debug, Clone)]
+pub struct Notification {
+    pub level: NotificationLevel,
+    pub message: String,
+}

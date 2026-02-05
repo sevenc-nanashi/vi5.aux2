@@ -1,5 +1,8 @@
 mod module;
-use std::sync::{Arc, OnceLock};
+use std::sync::{
+    Arc, OnceLock,
+    atomic::{AtomicBool, Ordering},
+};
 
 use aviutl2::{anyhow, log};
 use tap::prelude::*;
@@ -19,6 +22,7 @@ struct Vi5Aux2 {
     pub runtime: Arc<std::sync::RwLock<Option<tokio::runtime::Runtime>>>,
     server: Vi5Server,
     project_dir: Arc<tokio::sync::Mutex<Option<String>>>,
+    notifications_started: Arc<AtomicBool>,
 
     plugin: aviutl2::generic::SubPlugin<crate::module::InternalModule>,
 }
@@ -26,6 +30,7 @@ struct Vi5Aux2 {
 static CURRENT_PROJECT_FILE: std::sync::Mutex<Option<std::path::PathBuf>> =
     std::sync::Mutex::new(None);
 static VAR_PREFIX: &str = "VI5_AUX2_";
+const VI5_CEF_SERVER_PORT: u16 = 50051;
 
 fn get_script_dir(project_name: &str) -> std::path::PathBuf {
     aviutl2::config::app_data_path()
@@ -84,8 +89,16 @@ impl Vi5Aux2 {
         let runtime_handle = self.get_runtime_handle();
         let project_dir = self.project_dir.clone();
         let server = self.server.clone();
+        let notifications_started = self.notifications_started.clone();
         runtime_handle.spawn(async move {
-            if let Err(e) = Self::initialize_project_dir(dir, project_dir, server).await {
+            if let Err(e) = Self::initialize_project_dir(
+                dir,
+                project_dir,
+                server,
+                notifications_started,
+            )
+            .await
+            {
                 log::error!("Failed to initialize project directory: {}", e);
             }
         });
@@ -96,6 +109,7 @@ impl Vi5Aux2 {
         dir: String,
         project_dir: Arc<tokio::sync::Mutex<Option<String>>>,
         server: Vi5Server,
+        notifications_started: Arc<AtomicBool>,
     ) -> anyhow::Result<()> {
         {
             let guard = project_dir.lock().await;
@@ -125,6 +139,11 @@ impl Vi5Aux2 {
             .await
             .map_err(|e| anyhow::anyhow!("vi5-cef クライアントの初期化に失敗しました: {}", e))?;
         log::info!("vi5-cef initialized successfully.");
+        if !notifications_started.swap(true, Ordering::SeqCst) {
+            tokio::spawn(Self::notification_listener_task(
+                notifications_started,
+            ));
+        }
         let mut requires_restart = false;
         let mut requires_reload = false;
 
@@ -280,12 +299,12 @@ impl Vi5Aux2 {
                 let existing_content = tokio::fs::read_to_string(&script_path).await?;
                 let existing_headers = existing_content
                     .lines()
-                    .take_while(|line| line == &"--END_HEADER")
+                    .take_while(|line| line != &"--END_HEADER")
                     .collect::<Vec<_>>()
                     .join("\n");
                 let new_headers = script_content
                     .lines()
-                    .take_while(|line| line == &"--END_HEADER")
+                    .take_while(|line| line != &"--END_HEADER")
                     .collect::<Vec<_>>()
                     .join("\n");
                 log::debug!(
@@ -357,11 +376,9 @@ impl Vi5Aux2 {
     }
 
     async fn start_vi5_cef_server() -> anyhow::Result<(tokio::process::Child, vi5_cef::Client)> {
-        // TODO: port を動的に決定する
-        let port = 50051;
         let mut path = std::env::var("PATH").unwrap_or_default();
         path.push_str(";C:\\Users\\seven\\.local\\share\\cef");
-        log::info!("Starting vi5-cef server on port {}", port);
+        log::info!("Starting vi5-cef server on port {}", VI5_CEF_SERVER_PORT);
         for p in path.split(';') {
             log::debug!("PATH entry: {}", p);
         }
@@ -370,7 +387,7 @@ impl Vi5Aux2 {
             std::path::Path::new("e:/aviutl2/vi5.aux2/target/debug/vi5-cef-server.exe");
         let mut child = tokio::process::Command::new(cef_server_path)
             .arg("--port")
-            .arg(port.to_string())
+            .arg(VI5_CEF_SERVER_PORT.to_string())
             .arg("--hardware-acceleration")
             .arg("--devtools")
             .arg("--parent-process")
@@ -412,12 +429,72 @@ impl Vi5Aux2 {
             }
 
             res = vi5_cef::Client::connect(
-                format!("http://localhost:{}", port)
+                format!("http://localhost:{}", VI5_CEF_SERVER_PORT)
             ) => {
                 res.map_err(anyhow::Error::from)
             }
         }?;
         Ok((child, client))
+    }
+
+    async fn notification_listener_task(notifications_started: Arc<AtomicBool>) {
+        struct NotificationGuard {
+            started: Arc<AtomicBool>,
+        }
+
+        impl Drop for NotificationGuard {
+            fn drop(&mut self) {
+                self.started.store(false, Ordering::SeqCst);
+            }
+        }
+
+        let _guard = NotificationGuard {
+            started: notifications_started.clone(),
+        };
+        let mut client = match vi5_cef::Client::connect(format!(
+            "http://localhost:{}",
+            VI5_CEF_SERVER_PORT
+        ))
+        .await
+        {
+            Ok(client) => client,
+            Err(e) => {
+                log::error!("Failed to connect for notifications: {}", e);
+                return;
+            }
+        };
+
+        let mut stream = match client.subscribe_notifications().await {
+            Ok(stream) => stream,
+            Err(e) => {
+                log::error!("Failed to subscribe notifications: {}", e);
+                return;
+            }
+        };
+
+        loop {
+            match stream.message().await {
+                Ok(Some(notification)) => match notification.level {
+                    vi5_cef::NotificationLevel::Info => {
+                        log::info!("vi5 notification: {}", notification.message);
+                    }
+                    vi5_cef::NotificationLevel::Warn => {
+                        log::warn!("vi5 notification: {}", notification.message);
+                    }
+                    vi5_cef::NotificationLevel::Error => {
+                        log::error!("vi5 notification: {}", notification.message);
+                    }
+                },
+                Ok(None) => {
+                    log::info!("Notification stream closed");
+                    break;
+                }
+                Err(e) => {
+                    log::error!("Notification stream error: {}", e);
+                    break;
+                }
+            }
+        }
     }
 
     fn spawn_vi5_cef_exit_logger(child: Arc<tokio::sync::Mutex<tokio::process::Child>>) {
@@ -503,7 +580,8 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
             ))),
             server: Arc::new(tokio::sync::Mutex::new(None)),
             project_dir: Arc::new(tokio::sync::Mutex::new(None)),
-            plugin: aviutl2::generic::SubPlugin::new_script_module(info)?,
+            notifications_started: Arc::new(AtomicBool::new(false)),
+            plugin: aviutl2::generic::SubPlugin::new_script_module(&info)?,
         })
     }
 

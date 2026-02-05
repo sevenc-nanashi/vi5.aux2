@@ -12,6 +12,7 @@ vi5Log.info("Vi5 Client Runtime initializing...");
 declare const __vi5_data__: {
   projectName: string;
   objectList: string[];
+  hookConsoleLog: boolean;
 };
 window.__vi5__ = new Vi5Runtime(__vi5_data__.projectName);
 const promises = [];
@@ -26,5 +27,47 @@ for (const objectName of __vi5_data__.objectList) {
 }
 Promise.allSettled(promises).then(() => {
   window.__vi5__.init();
+  if (__vi5_data__.hookConsoleLog) {
+    hookConsole();
+  }
   vi5Log.info("Vi5 Client Runtime initialized.");
 });
+
+function hookConsole() {
+  const levels = [
+    { method: "log", level: "info" },
+    { method: "info", level: "info" },
+    { method: "warn", level: "warn" },
+    { method: "error", level: "error" },
+  ] as const;
+  let isNotifying = false;
+  for (const { method, level } of levels) {
+    const original = console[method];
+    console[method] = (...args: any[]) => {
+      if (isNotifying) {
+        return original.apply(console, args);
+      }
+      try {
+        isNotifying = true;
+        const message = args
+          .map((arg) => {
+            if (typeof arg === "string") {
+              return arg;
+            }
+            try {
+              return JSON.stringify(arg);
+            } catch {
+              return String(arg);
+            }
+          })
+          .join(" ");
+        window.__vi5__.notify(level, message);
+      } catch {
+        // ignore hook errors
+      } finally {
+        isNotifying = false;
+      }
+      original.apply(console, args);
+    };
+  }
+}

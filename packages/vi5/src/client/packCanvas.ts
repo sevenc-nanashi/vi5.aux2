@@ -4,6 +4,7 @@ import {
   RendereredObjectInfoSchema,
   SingleRenderResponseSchema,
   type MaybeIncompleteRenderResponse,
+  type Notification,
   type SingleRenderResponse,
 } from "../gen/server-js_pb";
 import { Vi5Runtime } from "./runtime";
@@ -54,11 +55,15 @@ const buildSuccessResponse = (
     },
   });
 
-const getMetadataRows = (renderResponses: SingleRenderResponse[]): number => {
+const getMetadataRows = (
+  renderResponses: SingleRenderResponse[],
+  notifications: Notification[],
+): number => {
   const payload = protobuf.toBinary(
     MaybeIncompleteRenderResponseSchema,
     protobuf.create(MaybeIncompleteRenderResponseSchema, {
       renderResponses,
+      notifications,
       isIncomplete: true,
     }),
   );
@@ -84,6 +89,7 @@ const packBatch = (
   responses: JsRenderResponse[],
   startIndex: number,
   metadataRows: number,
+  notifications: Notification[],
 ): PackResult => {
   const renderResponses: SingleRenderResponse[] = [];
   const packedCanvases: PackedCanvas[] = [];
@@ -137,7 +143,7 @@ const packBatch = (
     rowHeight = Math.max(rowHeight, height);
   }
 
-  const updatedMetadataRows = getMetadataRows(renderResponses);
+  const updatedMetadataRows = getMetadataRows(renderResponses, notifications);
   return {
     nextIndex: index,
     renderResponses,
@@ -146,15 +152,19 @@ const packBatch = (
   };
 };
 
-export function packCanvases(responses: JsRenderResponse[]): MaybeIncompleteRenderResponse[] {
+export function packCanvases(
+  responses: JsRenderResponse[],
+  notifications: Notification[],
+): MaybeIncompleteRenderResponse[] {
   const batches: MaybeIncompleteRenderResponse[] = [];
   let startIndex = 0;
 
   while (startIndex < responses.length) {
+    const batchNotifications = startIndex === 0 ? notifications : [];
     let metadataRows = 1;
     let result: PackResult;
     for (;;) {
-      result = packBatch(responses, startIndex, metadataRows);
+      result = packBatch(responses, startIndex, metadataRows, batchNotifications);
       if (result.metadataRows === metadataRows) {
         break;
       }
@@ -165,6 +175,7 @@ export function packCanvases(responses: JsRenderResponse[]): MaybeIncompleteRend
     batches.push(
       protobuf.create(MaybeIncompleteRenderResponseSchema, {
         renderResponses: result.renderResponses,
+        notifications: batchNotifications,
         isIncomplete: true,
       }),
     );

@@ -4,7 +4,6 @@ import path from "node:path";
 import { createVi5Plugin } from "./plugin";
 import { getUnusedPort } from "../helpers/port";
 import { createJiti } from "jiti";
-import { consoleForwardPlugin } from "vite-console-forward-plugin";
 
 const jiti = createJiti(import.meta.url);
 
@@ -46,7 +45,7 @@ async function createServer(
 ) {
   return createViteServer({
     root,
-    plugins: [createVi5Plugin(config, restartServer), consoleForwardPlugin()],
+    plugins: [createVi5Plugin(config, restartServer)],
     server: {
       port: port || (await getUnusedPort(3000)),
     },

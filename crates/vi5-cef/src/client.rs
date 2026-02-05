@@ -1,7 +1,6 @@
 use crate::convert::ConversionError;
 use crate::protocol;
-use crate::types::{InitializeResponse, RenderRequest, RenderResponse};
-use tap::prelude::*;
+use crate::types::{InitializeResponse, Notification, RenderRequest, RenderResponse};
 use tonic::IntoRequest;
 
 type LibServerClient =
@@ -81,5 +80,31 @@ impl Client {
     pub async fn shutdown(&mut self) -> Result<(), tonic::Status> {
         self.inner.shutdown(protocol::common::Void {}).await?;
         Ok(())
+    }
+
+    pub async fn subscribe_notifications(
+        &mut self,
+    ) -> Result<NotificationStream, tonic::Status> {
+        let response = self
+            .inner
+            .subscribe_notifications(protocol::common::Void {})
+            .await?
+            .into_inner();
+        Ok(NotificationStream { inner: response })
+    }
+}
+
+pub struct NotificationStream {
+    inner: tonic::Streaming<protocol::libserver::Notification>,
+}
+
+impl NotificationStream {
+    pub async fn message(&mut self) -> Result<Option<Notification>, tonic::Status> {
+        match self.inner.message().await? {
+            Some(notification) => {
+                Notification::try_from(notification).map(Some).map_err(ConversionError::into_status)
+            }
+            None => Ok(None),
+        }
     }
 }

@@ -32,7 +32,19 @@ message RootRenderResponse {
   }
 }
 
+enum NotificationLevel {
+  NOTIFICATION_LEVEL_INFO = 0;
+  NOTIFICATION_LEVEL_WARN = 1;
+  NOTIFICATION_LEVEL_ERROR = 2;
+}
+
+message Notification {
+  NotificationLevel level = 1;
+  string message = 2;
+}
+
 message MaybeIncompleteRenderResponse {
   repeated SingleRenderResponse render_responses = 1;
   bool is_incomplete = 2;
+  repeated Notification notifications = 3;
 }

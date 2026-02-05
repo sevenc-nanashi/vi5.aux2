@@ -10,4 +10,5 @@ interface Window {
 declare const __vi5_data__: {
   projectName: string;
   objectList: string[];
+  hookConsoleLog: boolean;
 };
