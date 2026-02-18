@@ -67,6 +67,8 @@ end
 
 local function get_frame_info_at(frame_offset)
   local time = obj.time + frame_offset * (1 / obj.framerate)
+  local starting_frame = obj.getvalue("frame_s")
+  local global_frame = starting_frame + obj.frame + frame_offset
   local frame_info = {
     x = obj.getvalue("x", time),
     y = obj.getvalue("y", time),
@@ -77,7 +79,9 @@ local function get_frame_info_at(frame_offset)
     current_time = time,
     total_frames = obj.totalframe,
     total_time = obj.totaltime,
-    framerate = obj.framerate
+    framerate = obj.framerate,
+    global_frame = global_frame,
+    global_time = global_frame / obj.framerate
   }
   return frame_info
 end

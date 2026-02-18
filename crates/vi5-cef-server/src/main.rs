@@ -69,7 +69,7 @@ fn main() -> anyhow::Result<()> {
 
     let cli_args = Args::parse();
     let mut settings = build_settings();
-    settings.remote_debugging_port = if cli_args.devtools { 9222 } else { 0 };
+    settings.remote_debugging_port = if cli_args.devtools { 5151 } else { 0 };
     let _shutdown_guard = initialize_cef(&args, &settings)?;
 
     let gpu = Arc::new(GpuCapture::new()?);

@@ -78,7 +78,12 @@ fn on_paint(buffer: &[u8], width: usize, height: usize, bytes_per_row: usize) {
                 drop(callback);
                 PAINT_CALLBACKS.remove(&nonce);
             }
-            std::ops::ControlFlow::Continue(()) => {}
+            std::ops::ControlFlow::Continue(()) => {
+                tracing::debug!(
+                    "Paint callback for nonce {} processed frame, waiting for more frames",
+                    nonce
+                );
+            }
         }
     } else {
         tracing::warn!("No paint callback found for nonce {}", nonce);
@@ -433,7 +438,15 @@ impl RenderLoop {
 
     pub async fn purge_cache(&self) -> anyhow::Result<()> {
         self.assert_initialized().await?;
-        PAINT_CALLBACKS.clear();
+        let mut keys_to_remove = vec![];
+        for callback in PAINT_CALLBACKS.iter() {
+            if *callback.key() > 1024 {
+                keys_to_remove.push(*callback.key());
+            }
+        }
+        for key in keys_to_remove {
+            PAINT_CALLBACKS.remove(&key);
+        }
         let js = "window.__vi5__.purgeCache();";
         self.browser.main_frame().unwrap().execute_java_script(
             Some(&cef::CefString::from(js)),

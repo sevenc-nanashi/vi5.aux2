@@ -482,6 +482,7 @@ impl Vi5Aux2 {
                 return;
             }
         };
+        log::info!("Started notification listener task");
 
         loop {
             match stream.message().await {
