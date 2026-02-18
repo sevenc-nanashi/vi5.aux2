@@ -593,11 +593,7 @@ impl RuntimeHandle {
 impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
     fn new(info: aviutl2::AviUtl2Info) -> aviutl2::AnyResult<Self> {
         aviutl2::logger::LogBuilder::new()
-            .filter_level(if cfg!(debug_assertions) {
-                aviutl2::logger::LevelFilter::Debug
-            } else {
-                aviutl2::logger::LevelFilter::Info
-            })
+            .filter_level(aviutl2::logger::LevelFilter::Debug)
             .init();
         Ok(Self {
             runtime: Arc::new(std::sync::RwLock::new(Some(
