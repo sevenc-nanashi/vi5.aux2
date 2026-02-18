@@ -142,7 +142,6 @@ impl Vi5Aux2 {
                 notifications_started,
             ));
         }
-        Self::update_script_dir(&info.project_name, &info.object_infos).await?;
         Ok(())
     }
 
@@ -385,9 +384,6 @@ impl Vi5Aux2 {
         let mut path = std::env::var("PATH").unwrap_or_default();
         path.push_str(";C:\\Users\\seven\\.local\\share\\cef");
         log::info!("Starting vi5-cef server on port {}", VI5_CEF_SERVER_PORT);
-        for p in path.split(';') {
-            log::debug!("PATH entry: {}", p);
-        }
         // TODO: 実行ファイルのパスを適切に設定する
         let cef_server_path = std::path::PathBuf::from(format!(
             "e:/aviutl2/vi5.aux2/target/{}/vi5-cef-server.exe",
@@ -679,7 +675,7 @@ impl Drop for Vi5Aux2 {
         }
         if let Some(runtime) = self.runtime.write().unwrap().take() {
             log::info!("Shutting down Tokio runtime...");
-            runtime.shutdown_timeout(std::time::Duration::from_secs(10));
+            runtime.shutdown_timeout(std::time::Duration::from_secs(5));
         }
     }
 }

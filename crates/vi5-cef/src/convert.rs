@@ -100,15 +100,9 @@ impl TryFrom<protocol::libserver::InitializeResponse> for InitializeResponse {
     type Error = ConversionError;
 
     fn try_from(value: protocol::libserver::InitializeResponse) -> Result<Self, Self::Error> {
-        let object_infos = value
-            .object_infos
-            .into_iter()
-            .map(ObjectInfo::try_from)
-            .collect::<Result<Vec<_>, _>>()?;
         Ok(Self {
             project_name: value.project_name,
             renderer_version: value.renderer_version,
-            object_infos,
         })
     }
 }

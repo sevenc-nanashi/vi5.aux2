@@ -61,7 +61,12 @@ async function maybeInitializeContext<T extends ParameterDefinitions>(
   parameter: InferParameters<T>,
 ): Promise<Vi5Context | undefined> {
   if (!initializePromises.has(objectId)) {
-    const initPromise = initializeContext(objectId, object, renderRequest, parameter);
+    const initPromise = initializeContext(
+      objectId,
+      object,
+      renderRequest,
+      parameter,
+    );
     initializePromises.set(objectId, initPromise);
 
     // 一瞬だけ待ってあげる
@@ -129,7 +134,9 @@ function grpcParamsToJsParams<T extends ParameterDefinitions>(
   return params as InferParameters<T>;
 }
 
-function toGrpcParameterType(definition: ParameterDefinitions[string]): GrpcParameterType {
+function toGrpcParameterType(
+  definition: ParameterDefinitions[string],
+): GrpcParameterType {
   switch (definition.type) {
     case "string":
       return protobuf.create(ParameterTypeSchema, {
@@ -275,20 +282,11 @@ export class Vi5Runtime {
         {
           projectName: this.projectName,
           rendererVersion: "1.0.0",
-          objectInfos: Array.from(this.objects.values()).map(
-            (obj): ObjectInfo =>
-              protobuf.create(ObjectInfoSchema, {
-                id: obj.id,
-                label: obj.label,
-                parameterDefinitions: Object.entries(obj.parameters).map(([key, def]) =>
-                  toGrpcParameterDefinition(key, def),
-                ),
-              }),
-          ),
         },
         0,
       );
     });
+    this.#notifyObjectInfos();
 
     if (import.meta.hot) {
       import.meta.hot.on("vi5:on-object-list-changed", (_list) => {
@@ -297,6 +295,37 @@ export class Vi5Runtime {
         window.location.reload();
       });
     }
+  }
+
+  #notifyObjectInfos() {
+    this.#renderQueue.render(priorityLevels.notify, () => {
+      const objectInfos = Array.from(this.objects.values()).map(
+        (obj): ObjectInfo =>
+          protobuf.create(ObjectInfoSchema, {
+            id: obj.id,
+            label: obj.label,
+            parameterDefinitions: Object.entries(obj.parameters).map(
+              ([key, def]) => toGrpcParameterDefinition(key, def),
+            ),
+          }),
+      );
+      this.drawMessage(
+        NotificationsSchema,
+        {
+          entries: [
+            {
+              entry: {
+                case: "objectListUpdate",
+                value: {
+                  objectInfos,
+                },
+              },
+            },
+          ],
+        },
+        notificationNonce,
+      );
+    });
   }
 
   async render(nonce: number, dataB64: string) {
@@ -401,7 +430,12 @@ export class Vi5Runtime {
     }
 
     const params = grpcParamsToJsParams(request.parameters);
-    const ctx = await maybeInitializeContext(request.objectId, object, request, params);
+    const ctx = await maybeInitializeContext(
+      request.objectId,
+      object,
+      request,
+      params,
+    );
     if (!ctx) {
       runtimeLog.info`Object not initialized yet: ${request.object}`;
       return {
@@ -520,10 +554,14 @@ export class Vi5Runtime {
   register<T extends Vi5Object<ParameterDefinitions>>(object: T) {
     runtimeLog.info`Registering object: ${object.id} (${object.label})`;
     this.objects.set(object.id, object);
+
+    this.#notifyObjectInfos();
   }
   unregister(id: string) {
     runtimeLog.info`Unregistering object: ${id}`;
     this.objects.delete(id);
+
+    this.#notifyObjectInfos();
   }
 
   get isNotifying() {
