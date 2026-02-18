@@ -90,6 +90,8 @@ pub struct FrameInfo {
     pub total_frames: usize,
     pub total_time: f64,
     pub framerate: f64,
+    pub global_frame: usize,
+    pub global_time: f64,
 }
 
 #[derive(Debug, Clone)]

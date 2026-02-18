@@ -58,6 +58,8 @@ impl FrameInfo {
             total_frames: self.total_frames as _,
             total_time: self.total_time,
             framerate: self.framerate,
+            global_frame: self.global_frame as _,
+            global_time: self.global_time,
         }
     }
 }

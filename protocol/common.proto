@@ -25,6 +25,8 @@ message FrameInfo {
   int32 total_frames = 8;
   double total_time = 9;
   double framerate = 10;
+  int32 global_frame = 11;
+  double global_time = 12;
 }
 
 message Parameter {

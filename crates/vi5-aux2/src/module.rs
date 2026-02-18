@@ -28,6 +28,8 @@ struct LuaFrameInfo {
     total_frames: i32,
     total_time: f64,
     framerate: f64,
+    global_frame: i32,
+    global_time: f64,
 }
 
 #[aviutl2::plugin(ScriptModule)]
@@ -95,6 +97,8 @@ fn compute_cache_key(request: &vi5_cef::RenderRequest) -> u64 {
     request.frame_info.total_frames.hash(&mut hasher);
     request.frame_info.total_time.to_bits().hash(&mut hasher);
     request.frame_info.framerate.to_bits().hash(&mut hasher);
+    request.frame_info.global_frame.hash(&mut hasher);
+    request.frame_info.global_time.to_bits().hash(&mut hasher);
     hasher.finish()
 }
 
@@ -146,6 +150,8 @@ fn build_render_request(
             total_frames: frame_info.total_frames as _,
             total_time: frame_info.total_time,
             framerate: frame_info.framerate,
+            global_frame: frame_info.global_frame as _,
+            global_time: frame_info.global_time,
         },
         parameters,
     })
