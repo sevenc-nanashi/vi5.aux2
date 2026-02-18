@@ -4,7 +4,6 @@ import {
   RendereredObjectInfoSchema,
   SingleRenderResponseSchema,
   type MaybeIncompleteRenderResponse,
-  type Notification,
   type SingleRenderResponse,
 } from "../gen/server-js_pb";
 import { Vi5Runtime } from "./runtime";
@@ -26,7 +25,10 @@ export type JsRenderResponse =
 const bytesPerPixel = 3;
 const messageHeaderBytes = 11;
 
-const buildErrorResponse = (nonce: number, error: string): SingleRenderResponse =>
+const buildErrorResponse = (
+  nonce: number,
+  error: string,
+): SingleRenderResponse =>
   protobuf.create(SingleRenderResponseSchema, {
     nonce,
     response: {
@@ -55,15 +57,11 @@ const buildSuccessResponse = (
     },
   });
 
-const getMetadataRows = (
-  renderResponses: SingleRenderResponse[],
-  notifications: Notification[],
-): number => {
+const getMetadataRows = (renderResponses: SingleRenderResponse[]): number => {
   const payload = protobuf.toBinary(
     MaybeIncompleteRenderResponseSchema,
     protobuf.create(MaybeIncompleteRenderResponseSchema, {
       renderResponses,
-      notifications,
       isIncomplete: true,
     }),
   );
@@ -89,7 +87,6 @@ const packBatch = (
   responses: JsRenderResponse[],
   startIndex: number,
   metadataRows: number,
-  notifications: Notification[],
 ): PackResult => {
   const renderResponses: SingleRenderResponse[] = [];
   const packedCanvases: PackedCanvas[] = [];
@@ -100,7 +97,9 @@ const packBatch = (
   while (index < responses.length) {
     const response = responses[index]!;
     if (response.type === "error") {
-      renderResponses.push(buildErrorResponse(response.renderNonce, response.error));
+      renderResponses.push(
+        buildErrorResponse(response.renderNonce, response.error),
+      );
       index += 1;
       continue;
     }
@@ -112,7 +111,10 @@ const packBatch = (
       height > Vi5Runtime.get().canvas.height - metadataRows
     ) {
       renderResponses.push(
-        buildErrorResponse(response.renderNonce, "canvas size exceeds pack area"),
+        buildErrorResponse(
+          response.renderNonce,
+          "canvas size exceeds pack area",
+        ),
       );
       continue;
     }
@@ -126,13 +128,18 @@ const packBatch = (
     if (y + height > Vi5Runtime.get().canvas.height) {
       if (renderResponses.length === 0) {
         renderResponses.push(
-          buildErrorResponse(response.renderNonce, "canvas size exceeds pack area"),
+          buildErrorResponse(
+            response.renderNonce,
+            "canvas size exceeds pack area",
+          ),
         );
       }
       break;
     }
 
-    renderResponses.push(buildSuccessResponse(response.renderNonce, x, y, width, height));
+    renderResponses.push(
+      buildSuccessResponse(response.renderNonce, x, y, width, height),
+    );
     packedCanvases.push({
       canvas: response.canvas,
       x,
@@ -143,7 +150,7 @@ const packBatch = (
     rowHeight = Math.max(rowHeight, height);
   }
 
-  const updatedMetadataRows = getMetadataRows(renderResponses, notifications);
+  const updatedMetadataRows = getMetadataRows(renderResponses);
   return {
     nextIndex: index,
     renderResponses,
@@ -154,17 +161,15 @@ const packBatch = (
 
 export function packCanvases(
   responses: JsRenderResponse[],
-  notifications: Notification[],
 ): MaybeIncompleteRenderResponse[] {
   const batches: MaybeIncompleteRenderResponse[] = [];
   let startIndex = 0;
 
   while (startIndex < responses.length) {
-    const batchNotifications = startIndex === 0 ? notifications : [];
     let metadataRows = 1;
     let result: PackResult;
     for (;;) {
-      result = packBatch(responses, startIndex, metadataRows, batchNotifications);
+      result = packBatch(responses, startIndex, metadataRows);
       if (result.metadataRows === metadataRows) {
         break;
       }
@@ -175,7 +180,6 @@ export function packCanvases(
     batches.push(
       protobuf.create(MaybeIncompleteRenderResponseSchema, {
         renderResponses: result.renderResponses,
-        notifications: batchNotifications,
         isIncomplete: true,
       }),
     );

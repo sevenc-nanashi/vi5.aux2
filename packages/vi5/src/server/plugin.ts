@@ -3,11 +3,42 @@ import fs from "node:fs/promises";
 import index from "./index.html?raw";
 import { dedent } from "../helpers/dedent";
 import type { Config } from "../config";
+import picomatch from "picomatch";
 
 export function createVi5Plugin(config: Config, restartServer: () => Promise<void>): Plugin {
+  const isObjectFile = picomatch("**/*.object.ts");
+  const buildObjectList = async () =>
+    Array.fromAsync(fs.glob("./src/**/*.object.ts")).then((files) =>
+      files.map((f) => "/" + f.replace(/\\/g, "/")),
+    );
+
   return {
     name: "vi5",
     configureServer(server) {
+      server.watcher.on("add", (file) => {
+        if (!isObjectFile(file)) {
+          return;
+        }
+        void buildObjectList().then((list) => {
+          server.ws.send({
+            type: "custom",
+            event: "vi5:on-object-list-changed",
+            data: list,
+          });
+        });
+      });
+      server.watcher.on("unlink", (file) => {
+        if (!isObjectFile(file)) {
+          return;
+        }
+        void buildObjectList().then((list) => {
+          server.ws.send({
+            type: "custom",
+            event: "vi5:on-object-list-changed",
+            data: list,
+          });
+        });
+      });
       server.middlewares.use((req, res, next) => {
         if (req.url === "/vi5") {
           res.statusCode = 200;
@@ -41,9 +72,7 @@ export function createVi5Plugin(config: Config, restartServer: () => Promise<voi
         define: {
           __vi5_data__: {
             projectName: config.name,
-            objectList: await Array.fromAsync(fs.glob("./src/**/*.object.ts")).then((files) =>
-              files.map((f) => "/" + f.replace(/\\/g, "/")),
-            ),
+            objectList: await buildObjectList(),
             hookConsoleLog: config.hookConsoleLog ?? true,
           },
         },

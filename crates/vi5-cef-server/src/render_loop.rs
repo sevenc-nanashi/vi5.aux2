@@ -171,24 +171,44 @@ impl RenderLoop {
             Box::new({
                 let notification_tx = self.notification_tx.clone();
                 move |buffer, _, _| {
-                    match read_raw_message_from_image(buffer) {
+                    match read_message_from_image::<crate::protocol::serverjs::Notifications>(
+                        buffer,
+                    ) {
                         Ok(payload) => {
-                            if payload.is_empty() {
-                                tracing::warn!("Received empty notification payload");
-                                return std::ops::ControlFlow::Continue(());
-                            }
-                            let level = payload[0] as i32;
-                            let message = match String::from_utf8(payload[1..].to_vec()) {
-                                Ok(message) => message,
-                                Err(e) => {
-                                    tracing::warn!("Invalid notification message: {}", e);
-                                    return std::ops::ControlFlow::Continue(());
+                            for notification in payload.entries {
+                                match notification.entry {
+                                    Some(crate::protocol::serverjs::notification_entry::Entry::Log(log)) => {
+                                        let log_notification =
+                                            crate::protocol::libserver::Notification {
+                                                notification: Some(
+                                                    crate::protocol::libserver::notification::Notification::LogNotification(
+                                                        crate::protocol::libserver::LogNotification {
+                                                            level: log.level,
+                                                            message: log.message,
+                                                        },
+                                                    ),
+                                                ),
+                                            };
+                                        let _ = notification_tx.send(log_notification);
+                                    }
+                                    Some(crate::protocol::serverjs::notification_entry::Entry::ObjectListUpdate(object_list)) => {
+                                        let object_infos_notification =
+                                            crate::protocol::libserver::Notification {
+                                                notification: Some(
+                                                    crate::protocol::libserver::notification::Notification::ObjectInfoNotification(
+                                                        crate::protocol::libserver::ObjectInfosNotification {
+                                                            object_infos: object_list.object_infos
+                                                        }
+                                                    ),
+                                                )
+                                            };
+                                        let _ = notification_tx.send(object_infos_notification);
+                                    }
+                                    None => {
+                                        tracing::warn!("Received notification with unparsable entry");
+                                    }
                                 }
-                            };
-                            let _ = notification_tx.send(crate::protocol::libserver::Notification {
-                                level,
-                                message,
-                            });
+                            }
                         }
                         Err(e) => {
                             tracing::error!("Failed to decode notification payload: {}", e);
@@ -269,7 +289,6 @@ impl RenderLoop {
         };
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
         let mut maybe_tx = Some(tx);
-        let notification_tx = self.notification_tx.clone();
         let callback = Box::new(move |buffer: &[u8], width: usize, _height: usize| {
             let Some(tx) = &maybe_tx else {
                 return std::ops::ControlFlow::Break(());
@@ -308,13 +327,6 @@ impl RenderLoop {
                     return std::ops::ControlFlow::Break(());
                 }
             };
-
-            for notification in response.notifications {
-                let _ = notification_tx.send(crate::protocol::libserver::Notification {
-                    level: notification.level,
-                    message: notification.message,
-                });
-            }
 
             for single_render_response in response.render_responses {
                 match single_render_response.response.unwrap() {

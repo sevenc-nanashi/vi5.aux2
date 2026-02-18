@@ -57,6 +57,9 @@ importers:
       '@bufbuild/protobuf':
         specifier: ^2.10.2
         version: 2.10.2
+      '@datastructures-js/priority-queue':
+        specifier: ^6.3.5
+        version: 6.3.5
       '@logtape/logtape':
         specifier: ^2.0.0
         version: 2.0.0
@@ -163,6 +166,12 @@ packages:
 
   '@bufbuild/protoplugin@2.10.2':
     resolution: {integrity: sha512-RAWVs9tCzRqSS3tUtaFhOcauOAazCrm7tlGh0WHFq/44n5Fj6YgefdlZEPIaAK6VAA+FdOoFgtOJK2Ji5U24pw==}
+
+  '@datastructures-js/heap@4.3.7':
+    resolution: {integrity: sha512-Dx4un7Uj0dVxkfoq4RkpzsY2OrvNJgQYZ3n3UlGdl88RxxdHd7oTi21/l3zoxUUe0sXFuNUrfmWqlHzqnoN6Ug==}
+
+  '@datastructures-js/priority-queue@6.3.5':
+    resolution: {integrity: sha512-NmdmvLnkUyG67W6Iy8tP+865ILq5VDyZh90c8lHMOkYYydUNzOV0QNPCRAuj4AoHSm/V2DeuYvDKnvALaCwLvA==}
 
   '@davepagurek/bezier-path@0.0.2':
     resolution: {integrity: sha512-4L9ddgzZc9DRGyl1RrS3z5nwnVJoyjsAelVG4X1jh4tVxryEHr4H9QavhxW/my6Rn3669Qz6mhv8gd5O/WeFTA==}
@@ -957,6 +966,12 @@ snapshots:
       typescript: 5.4.5
     transitivePeerDependencies:
       - supports-color
+
+  '@datastructures-js/heap@4.3.7': {}
+
+  '@datastructures-js/priority-queue@6.3.5':
+    dependencies:
+      '@datastructures-js/heap': 4.3.7
 
   '@davepagurek/bezier-path@0.0.2': {}
 

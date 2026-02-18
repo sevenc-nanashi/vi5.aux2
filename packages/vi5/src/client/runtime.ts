@@ -18,10 +18,10 @@ import { vi5Log } from "./log";
 import {
   InitializeInfoSchema,
   RootRenderResponseSchema,
-  NotificationSchema,
-  NotificationLevel,
   type MaybeIncompleteRenderResponse,
   type RendereredObjectInfo,
+  LogLevel,
+  NotificationsSchema,
 } from "../gen/server-js_pb";
 import type {
   InferParameters,
@@ -32,14 +32,16 @@ import type {
 import { Vi5Context } from "../user/context";
 import { packCanvases, type JsRenderResponse } from "./packCanvas";
 import p5 from "p5";
+import { DisposableCounterFactory } from "./disposableCounter";
+import { priorityLevels, RenderQueue } from "./renderQueue";
 
 const runtimeLog = vi5Log.getChild("Vi5Runtime");
 type NotificationLevelKey = keyof typeof notificationLevelMap;
 const notificationNonce = 1;
 const notificationLevelMap = {
-  info: NotificationLevel.INFO,
-  warn: NotificationLevel.WARN,
-  error: NotificationLevel.ERROR,
+  info: LogLevel.INFO,
+  warn: LogLevel.WARN,
+  error: LogLevel.ERROR,
 } as const;
 
 const isMessage = <Desc extends protobuf.DescMessage>(
@@ -59,12 +61,7 @@ async function maybeInitializeContext<T extends ParameterDefinitions>(
   parameter: InferParameters<T>,
 ): Promise<Vi5Context | undefined> {
   if (!initializePromises.has(objectId)) {
-    const initPromise = initializeContext(
-      objectId,
-      object,
-      renderRequest,
-      parameter,
-    );
+    const initPromise = initializeContext(objectId, object, renderRequest, parameter);
     initializePromises.set(objectId, initPromise);
 
     // 一瞬だけ待ってあげる
@@ -132,9 +129,7 @@ function grpcParamsToJsParams<T extends ParameterDefinitions>(
   return params as InferParameters<T>;
 }
 
-function toGrpcParameterType(
-  definition: ParameterDefinitions[string],
-): GrpcParameterType {
+function toGrpcParameterType(definition: ParameterDefinitions[string]): GrpcParameterType {
   switch (definition.type) {
     case "string":
       return protobuf.create(ParameterTypeSchema, {
@@ -238,9 +233,7 @@ const temporaryCanvases: HTMLCanvasElement[] = [];
 
 const cloneCanvas = (source: HTMLCanvasElement): HTMLCanvasElement => {
   if (temporaryCanvases.length === 0) {
-    runtimeLog.debug`Adding new temporary canvas (pool size: ${
-      temporaryCanvases.length + 1
-    })`;
+    runtimeLog.debug`Adding new temporary canvas (pool size: ${temporaryCanvases.length + 1})`;
   }
   const clone = temporaryCanvases.pop() ?? document.createElement("canvas");
   if (clone.width < source.width) {
@@ -265,34 +258,37 @@ export class Vi5Runtime {
   readonly canvas: HTMLCanvasElement;
   readonly ctx: CanvasRenderingContext2D;
   readonly objects = new Map<string, Vi5Object<ParameterDefinitions>>();
-  #notificationQueue: protobuf.MessageShape<typeof NotificationSchema>[] = [];
-  #renderingDepth = 0;
+  #renderQueue = new RenderQueue();
+  #notifyCounter = new DisposableCounterFactory();
+  #logQueue: { level: NotificationLevelKey; message: string }[] = [];
 
   constructor(public projectName: string) {
     this.canvas = document.getElementById("vi5-canvas") as HTMLCanvasElement;
     this.ctx = this.canvas.getContext("2d")!;
   }
 
-  init() {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.drawMessage(
-      InitializeInfoSchema,
-      {
-        projectName: this.projectName,
-        rendererVersion: "1.0.0",
-        objectInfos: Array.from(this.objects.values()).map(
-          (obj): ObjectInfo =>
-            protobuf.create(ObjectInfoSchema, {
-              id: obj.id,
-              label: obj.label,
-              parameterDefinitions: Object.entries(obj.parameters).map(
-                ([key, def]) => toGrpcParameterDefinition(key, def),
-              ),
-            }),
-        ),
-      },
-      0,
-    );
+  async init() {
+    await this.#renderQueue.render(priorityLevels.init, () => {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.drawMessage(
+        InitializeInfoSchema,
+        {
+          projectName: this.projectName,
+          rendererVersion: "1.0.0",
+          objectInfos: Array.from(this.objects.values()).map(
+            (obj): ObjectInfo =>
+              protobuf.create(ObjectInfoSchema, {
+                id: obj.id,
+                label: obj.label,
+                parameterDefinitions: Object.entries(obj.parameters).map(([key, def]) =>
+                  toGrpcParameterDefinition(key, def),
+                ),
+              }),
+          ),
+        },
+        0,
+      );
+    });
 
     if (import.meta.hot) {
       import.meta.hot.on("vi5:on-object-list-changed", (_list) => {
@@ -304,7 +300,6 @@ export class Vi5Runtime {
   }
 
   async render(nonce: number, dataB64: string) {
-    this.#renderingDepth += 1;
     try {
       const data = await fastBase64.toBytes(dataB64);
       const renderPayload = protobuf.fromBinary(BatchRenderRequestSchema, data);
@@ -328,10 +323,11 @@ export class Vi5Runtime {
           canvases.set(resp.renderNonce, resp.canvas);
         }
       }
-      const notifications = this.flushNotifications();
-      const packed = packCanvases(jsResponses, notifications);
+      const packed = packCanvases(jsResponses);
       for (const packedResponse of packed) {
-        this.renderSingleResponse(packedResponse, nonce, canvases);
+        await this.#renderQueue.render(priorityLevels.render, () =>
+          this.renderSingleResponse(packedResponse, nonce, canvases),
+        );
       }
       for (const canvas of canvases.values()) {
         disposeCanvas(canvas);
@@ -349,8 +345,6 @@ export class Vi5Runtime {
         },
         nonce,
       );
-    } finally {
-      this.#renderingDepth = Math.max(0, this.#renderingDepth - 1);
     }
   }
 
@@ -407,12 +401,7 @@ export class Vi5Runtime {
     }
 
     const params = grpcParamsToJsParams(request.parameters);
-    const ctx = await maybeInitializeContext(
-      request.objectId,
-      object,
-      request,
-      params,
-    );
+    const ctx = await maybeInitializeContext(request.objectId, object, request, params);
     if (!ctx) {
       runtimeLog.info`Object not initialized yet: ${request.object}`;
       return {
@@ -492,28 +481,36 @@ export class Vi5Runtime {
     this.ctx.putImageData(pixelData, 0, 0);
   }
 
-  notify(level: NotificationLevelKey, message: string) {
-    const levelValue = notificationLevelMap[level];
-    if (this.#renderingDepth > 0) {
-      this.#notificationQueue.push(
-        protobuf.create(NotificationSchema, {
-          level: levelValue,
-          message,
-        }),
-      );
-    } else {
-      const messageBytes = new TextEncoder().encode(message);
-      const payload = new Uint8Array(1 + messageBytes.length);
-      payload[0] = levelValue;
-      payload.set(messageBytes, 1);
-      this.drawRawMessage(payload, notificationNonce);
+  pushLog(level: NotificationLevelKey, message: string) {
+    this.#logQueue.push({ level, message });
+    if (this.#logQueue.length === 1) {
+      this.#renderQueue.render(priorityLevels.notify, () => {
+        const queue = [...this.#logQueue];
+        this.#logQueue.length = 0;
+        this.drawMessage(
+          NotificationsSchema,
+          {
+            entries: queue.map(
+              ({
+                level,
+                message,
+              }): NonNullable<
+                protobuf.MessageInitShape<typeof NotificationsSchema>["entries"]
+              >[number] => ({
+                entry: {
+                  case: "log",
+                  value: {
+                    level: notificationLevelMap[level],
+                    message,
+                  },
+                },
+              }),
+            ),
+          },
+          notificationNonce,
+        );
+      });
     }
-  }
-
-  private flushNotifications() {
-    const notifications = this.#notificationQueue;
-    this.#notificationQueue = [];
-    return notifications;
   }
 
   static get() {
@@ -527,5 +524,9 @@ export class Vi5Runtime {
   unregister(id: string) {
     runtimeLog.info`Unregistering object: ${id}`;
     this.objects.delete(id);
+  }
+
+  get isNotifying() {
+    return this.#notifyCounter.count > 0;
   }
 }

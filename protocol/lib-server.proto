@@ -4,15 +4,26 @@ package libserver;
 
 import "common.proto";
 
-enum NotificationLevel {
-  NOTIFICATION_LEVEL_INFO = 0;
-  NOTIFICATION_LEVEL_WARN = 1;
-  NOTIFICATION_LEVEL_ERROR = 2;
+enum LogNotificationLevel {
+  LOG_NOTIFICATION_LEVEL_INFO = 0;
+  LOG_NOTIFICATION_LEVEL_WARN = 1;
+  LOG_NOTIFICATION_LEVEL_ERROR = 2;
 }
 
 message Notification {
-  NotificationLevel level = 1;
+  oneof notification {
+    LogNotification log_notification = 1;
+    ObjectInfosNotification object_info_notification = 2;
+  }
+}
+
+message LogNotification {
+  LogNotificationLevel level = 1;
   string message = 2;
+}
+
+message ObjectInfosNotification {
+  repeated common.ObjectInfo object_infos = 1;
 }
 
 message InitializeRequest { string root_path = 1; }

@@ -133,14 +133,25 @@ pub enum RenderResponseData {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum NotificationLevel {
+pub enum LogNotificationLevel {
     Info,
     Warn,
     Error,
 }
 
 #[derive(Debug, Clone)]
-pub struct Notification {
-    pub level: NotificationLevel,
+pub enum Notification {
+    Log(LogNotification),
+    ObjectInfos(ObjectInfosNotification),
+}
+
+#[derive(Debug, Clone)]
+pub struct LogNotification {
+    pub level: LogNotificationLevel,
     pub message: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct ObjectInfosNotification {
+    pub object_infos: Vec<ObjectInfo>,
 }

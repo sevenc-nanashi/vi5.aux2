@@ -1,8 +1,8 @@
 use crate::protocol;
 use crate::types::{
-    Color, FrameInfo, InitializeResponse, ObjectInfo, Parameter, ParameterDefinition,
-    Notification, NotificationLevel, ParameterType, ParameterValue, RenderRequest, RenderResponse,
-    RenderResponseData,
+    Color, FrameInfo, InitializeResponse, LogNotification, LogNotificationLevel, Notification,
+    ObjectInfo, ObjectInfosNotification, Parameter, ParameterDefinition, ParameterType,
+    ParameterValue, RenderRequest, RenderResponse, RenderResponseData,
 };
 
 use crate::types::NumberStep;
@@ -251,15 +251,31 @@ impl TryFrom<protocol::libserver::Notification> for Notification {
     type Error = ConversionError;
 
     fn try_from(value: protocol::libserver::Notification) -> Result<Self, Self::Error> {
-        let level = NotificationLevel::try_from(value.level)?;
-        Ok(Self {
-            level,
-            message: value.message,
+        Ok(match value.notification {
+            Some(protocol::libserver::notification::Notification::LogNotification(log)) => {
+                Notification::Log(LogNotification {
+                    level: LogNotificationLevel::try_from(log.level)?,
+                    message: log.message,
+                })
+            }
+            Some(protocol::libserver::notification::Notification::ObjectInfoNotification(
+                object_infos,
+            )) => {
+                let object_infos = object_infos
+                    .object_infos
+                    .into_iter()
+                    .map(ObjectInfo::try_from)
+                    .collect::<Result<Vec<_>, _>>()?;
+                Notification::ObjectInfos(ObjectInfosNotification { object_infos })
+            }
+            None => {
+                return Err(ConversionError::InvalidNotificationLevel(-1));
+            }
         })
     }
 }
 
-impl TryFrom<i32> for NotificationLevel {
+impl TryFrom<i32> for LogNotificationLevel {
     type Error = ConversionError;
 
     fn try_from(value: i32) -> Result<Self, ConversionError> {

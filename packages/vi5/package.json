@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.10.2",
+    "@datastructures-js/priority-queue": "^6.3.5",
     "@logtape/logtape": "^2.0.0",
     "fast-base64": "^0.1.8",
     "jiti": "^2.6.1",

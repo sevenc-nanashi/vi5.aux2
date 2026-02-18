@@ -29,7 +29,6 @@ export default defineObject({
     p.textAlign(ctx.p.CENTER, ctx.p.CENTER);
     p.textSize(16);
     p.text(`Frame: ${p.frameCount}`, 100, 20);
-    p.text(`Hello from p5.js`, 100, 50);
     p.ellipse(100, ctx.frameInfo.currentFrame, params.radius, params.radius);
     ctx.notify("info", "Hello");
   },

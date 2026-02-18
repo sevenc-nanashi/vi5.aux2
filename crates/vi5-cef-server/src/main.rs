@@ -93,7 +93,10 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn watch_parent_process(parent_pid: u32, sender: Arc<tokio::sync::mpsc::UnboundedSender<()>>) {
+async fn watch_parent_process(
+    parent_pid: u32,
+    sender: Arc<tokio::sync::mpsc::UnboundedSender<()>>,
+) {
     let check_interval = tokio::time::Duration::from_secs(5);
     loop {
         if sysinfo::System::new_all()

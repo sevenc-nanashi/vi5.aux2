@@ -40,34 +40,26 @@ function hookConsole() {
     { method: "warn", level: "warn" },
     { method: "error", level: "error" },
   ] as const;
-  let isNotifying = false;
   for (const { method, level } of levels) {
     const original = console[method];
     console[method] = (...args: any[]) => {
-      if (isNotifying) {
-        return original.apply(console, args);
-      }
-      try {
-        isNotifying = true;
-        const message = args
-          .map((arg) => {
-            if (typeof arg === "string") {
-              return arg;
-            }
-            try {
-              return JSON.stringify(arg);
-            } catch {
-              return String(arg);
-            }
-          })
-          .join(" ");
-        window.__vi5__.notify(level, message);
-      } catch {
-        // ignore hook errors
-      } finally {
-        isNotifying = false;
-      }
       original.apply(console, args);
+      if (window.__vi5__.isNotifying) {
+        return;
+      }
+      const message = args
+        .map((arg) => {
+          if (typeof arg === "string") {
+            return arg;
+          }
+          try {
+            return JSON.stringify(arg);
+          } catch {
+            return String(arg);
+          }
+        })
+        .join(" ");
+      window.__vi5__.pushLog(level, message);
     };
   }
 }

@@ -69,7 +69,7 @@ export class Vi5Context {
   }
 
   notify(level: "info" | "warn" | "error", message: string) {
-    window.__vi5__?.notify(level, message);
+    window.__vi5__.pushLog(level, message);
   }
 
   /** @internal */

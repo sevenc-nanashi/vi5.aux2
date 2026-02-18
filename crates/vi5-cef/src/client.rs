@@ -18,7 +18,11 @@ impl Client {
         D: TryInto<tonic::transport::Endpoint>,
         D::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
     {
-        let inner = LibServerClient::connect(tonic::transport::Endpoint::new(dst)?).await?;
+        let inner = LibServerClient::connect(
+            tonic::transport::Endpoint::new(dst)?
+                .connect_timeout(std::time::Duration::from_secs(60)),
+        )
+        .await?;
         Ok(Self {
             inner,
             next_nonce: 1,
@@ -82,9 +86,7 @@ impl Client {
         Ok(())
     }
 
-    pub async fn subscribe_notifications(
-        &mut self,
-    ) -> Result<NotificationStream, tonic::Status> {
+    pub async fn subscribe_notifications(&mut self) -> Result<NotificationStream, tonic::Status> {
         let response = self
             .inner
             .subscribe_notifications(protocol::common::Void {})
@@ -101,9 +103,9 @@ pub struct NotificationStream {
 impl NotificationStream {
     pub async fn message(&mut self) -> Result<Option<Notification>, tonic::Status> {
         match self.inner.message().await? {
-            Some(notification) => {
-                Notification::try_from(notification).map(Some).map_err(ConversionError::into_status)
-            }
+            Some(notification) => Notification::try_from(notification)
+                .map(Some)
+                .map_err(ConversionError::into_status),
             None => Ok(None),
         }
     }

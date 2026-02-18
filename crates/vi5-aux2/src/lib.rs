@@ -91,13 +91,8 @@ impl Vi5Aux2 {
         let server = self.server.clone();
         let notifications_started = self.notifications_started.clone();
         runtime_handle.spawn(async move {
-            if let Err(e) = Self::initialize_project_dir(
-                dir,
-                project_dir,
-                server,
-                notifications_started,
-            )
-            .await
+            if let Err(e) =
+                Self::initialize_project_dir(dir, project_dir, server, notifications_started).await
             {
                 log::error!("Failed to initialize project directory: {}", e);
             }
@@ -141,9 +136,20 @@ impl Vi5Aux2 {
         log::info!("vi5-cef initialized successfully.");
         if !notifications_started.swap(true, Ordering::SeqCst) {
             tokio::spawn(Self::notification_listener_task(
+                project_dir.clone(),
+                info.project_name.clone(),
+                server.clone(),
                 notifications_started,
             ));
         }
+        Self::update_script_dir(&info.project_name, &info.object_infos).await?;
+        Ok(())
+    }
+
+    async fn update_script_dir(
+        project_name: &str,
+        object_infos: &[vi5_cef::ObjectInfo],
+    ) -> anyhow::Result<()> {
         let mut requires_restart = false;
         let mut requires_reload = false;
 
@@ -153,14 +159,14 @@ impl Vi5Aux2 {
             .unwrap()
             .to_string_lossy()
             .to_string();
-        let script_dir = get_script_dir(&info.project_name);
+        let script_dir = get_script_dir(project_name);
         log::info!("Project script directory: {:?}", script_dir);
         if !script_dir.exists() {
             tokio::fs::create_dir_all(&script_dir).await?;
             requires_restart = true;
         }
 
-        for object in info.object_infos {
+        for object in object_infos {
             let base_script = include_str!("./script.lua").to_string();
             let param_defs = object
                 .parameter_definitions
@@ -279,7 +285,7 @@ impl Vi5Aux2 {
                 .replace("--PARAMETER_DEFINITIONS--", param_defs.as_str())
                 .replace(
                     "--LABEL--",
-                    format!("--label:vi5.aux2\\{}", info.project_name).as_str(),
+                    format!("--label:vi5.aux2\\{}", project_name).as_str(),
                 )
                 .replace("--MODULE_NAME--", module_name.as_str())
                 .replace("--PARAMETER_KEYS--", keys.as_str())
@@ -383,9 +389,15 @@ impl Vi5Aux2 {
             log::debug!("PATH entry: {}", p);
         }
         // TODO: 実行ファイルのパスを適切に設定する
-        let cef_server_path =
-            std::path::Path::new("e:/aviutl2/vi5.aux2/target/debug/vi5-cef-server.exe");
-        let mut child = tokio::process::Command::new(cef_server_path)
+        let cef_server_path = std::path::PathBuf::from(format!(
+            "e:/aviutl2/vi5.aux2/target/{}/vi5-cef-server.exe",
+            if cfg!(debug_assertions) {
+                "debug"
+            } else {
+                "release"
+            }
+        ));
+        let mut child = tokio::process::Command::new(&cef_server_path)
             .arg("--port")
             .arg(VI5_CEF_SERVER_PORT.to_string())
             .arg("--hardware-acceleration")
@@ -437,7 +449,12 @@ impl Vi5Aux2 {
         Ok((child, client))
     }
 
-    async fn notification_listener_task(notifications_started: Arc<AtomicBool>) {
+    async fn notification_listener_task(
+        project_dir: Arc<tokio::sync::Mutex<Option<String>>>,
+        project_name: String,
+        server: Vi5Server,
+        notifications_started: Arc<AtomicBool>,
+    ) {
         struct NotificationGuard {
             started: Arc<AtomicBool>,
         }
@@ -451,18 +468,16 @@ impl Vi5Aux2 {
         let _guard = NotificationGuard {
             started: notifications_started.clone(),
         };
-        let mut client = match vi5_cef::Client::connect(format!(
-            "http://localhost:{}",
-            VI5_CEF_SERVER_PORT
-        ))
-        .await
-        {
-            Ok(client) => client,
-            Err(e) => {
-                log::error!("Failed to connect for notifications: {}", e);
-                return;
-            }
-        };
+        let mut client =
+            match vi5_cef::Client::connect(format!("http://localhost:{}", VI5_CEF_SERVER_PORT))
+                .await
+            {
+                Ok(client) => client,
+                Err(e) => {
+                    log::error!("Failed to connect for notifications: {}", e);
+                    return;
+                }
+            };
 
         let mut stream = match client.subscribe_notifications().await {
             Ok(stream) => stream,
@@ -474,15 +489,28 @@ impl Vi5Aux2 {
 
         loop {
             match stream.message().await {
-                Ok(Some(notification)) => match notification.level {
-                    vi5_cef::NotificationLevel::Info => {
-                        log::info!("vi5 notification: {}", notification.message);
-                    }
-                    vi5_cef::NotificationLevel::Warn => {
-                        log::warn!("vi5 notification: {}", notification.message);
-                    }
-                    vi5_cef::NotificationLevel::Error => {
-                        log::error!("vi5 notification: {}", notification.message);
+                Ok(Some(notification)) => match notification {
+                    vi5_cef::Notification::Log(log) => match log.level {
+                        vi5_cef::LogNotificationLevel::Info => {
+                            log::info!("vi5 notification: {}", log.message);
+                        }
+                        vi5_cef::LogNotificationLevel::Warn => {
+                            log::warn!("vi5 notification: {}", log.message);
+                        }
+                        vi5_cef::LogNotificationLevel::Error => {
+                            log::error!("vi5 notification: {}", log.message);
+                        }
+                    },
+                    vi5_cef::Notification::ObjectInfos(object_infos) => {
+                        log::info!(
+                            "Received object infos notification with {} objects",
+                            object_infos.object_infos.len()
+                        );
+                        if let Err(e) =
+                            Self::update_script_dir(&project_name, &object_infos.object_infos).await
+                        {
+                            log::error!("Failed to update script directory: {}", e);
+                        }
                     }
                 },
                 Ok(None) => {

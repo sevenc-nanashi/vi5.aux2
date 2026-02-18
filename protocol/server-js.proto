@@ -32,19 +32,33 @@ message RootRenderResponse {
   }
 }
 
-enum NotificationLevel {
-  NOTIFICATION_LEVEL_INFO = 0;
-  NOTIFICATION_LEVEL_WARN = 1;
-  NOTIFICATION_LEVEL_ERROR = 2;
+enum LogLevel {
+  LOG_LEVEL_INFO = 0;
+  LOG_LEVEL_WARN = 1;
+  LOG_LEVEL_ERROR = 2;
 }
 
-message Notification {
-  NotificationLevel level = 1;
+message Log {
+  LogLevel level = 1;
   string message = 2;
+}
+
+message ObjectListUpdateNotification {
+  repeated common.ObjectInfo object_infos = 1;
+}
+
+message NotificationEntry {
+  oneof entry {
+    Log log = 1;
+    ObjectListUpdateNotification object_list_update = 2;
+  }
+}
+
+message Notifications {
+  repeated NotificationEntry entries = 1;
 }
 
 message MaybeIncompleteRenderResponse {
   repeated SingleRenderResponse render_responses = 1;
   bool is_incomplete = 2;
-  repeated Notification notifications = 3;
 }

@@ -4,7 +4,7 @@ declare module "*?raw" {
 }
 
 interface Window {
-  __vi5__: Vi5Runtime;
+  __vi5__: import("./client/runtime").Vi5Runtime;
 }
 
 declare const __vi5_data__: {

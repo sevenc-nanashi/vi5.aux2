@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file server-js.proto.
  */
 export const file_server_js: GenFile = /*@__PURE__*/
-  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzImoKDkluaXRpYWxpemVJbmZvEhQKDHByb2plY3RfbmFtZRgBIAEoCRIYChByZW5kZXJlcl92ZXJzaW9uGAIgASgJEigKDG9iamVjdF9pbmZvcxgDIAMoCzISLmNvbW1vbi5PYmplY3RJbmZvIksKFFJlbmRlcmVyZWRPYmplY3RJbmZvEgkKAXgYASABKAUSCQoBeRgCIAEoBRINCgV3aWR0aBgDIAEoBRIOCgZoZWlnaHQYBCABKAUijAEKFFNpbmdsZVJlbmRlclJlc3BvbnNlEg0KBW5vbmNlGAEgASgFEkAKFnJlbmRlcmVyZWRfb2JqZWN0X2luZm8YAiABKAsyHi5zZXJ2ZXJqcy5SZW5kZXJlcmVkT2JqZWN0SW5mb0gAEhcKDWVycm9yX21lc3NhZ2UYAyABKAlIAEIKCghyZXNwb25zZSJ1ChJSb290UmVuZGVyUmVzcG9uc2USOgoHc3VjY2VzcxgBIAEoCzInLnNlcnZlcmpzLk1heWJlSW5jb21wbGV0ZVJlbmRlclJlc3BvbnNlSAASFwoNZXJyb3JfbWVzc2FnZRgCIAEoCUgAQgoKCHJlc3BvbnNlIksKDE5vdGlmaWNhdGlvbhIqCgVsZXZlbBgBIAEoDjIbLnNlcnZlcmpzLk5vdGlmaWNhdGlvbkxldmVsEg8KB21lc3NhZ2UYAiABKAkinwEKHU1heWJlSW5jb21wbGV0ZVJlbmRlclJlc3BvbnNlEjgKEHJlbmRlcl9yZXNwb25zZXMYASADKAsyHi5zZXJ2ZXJqcy5TaW5nbGVSZW5kZXJSZXNwb25zZRIVCg1pc19pbmNvbXBsZXRlGAIgASgIEi0KDW5vdGlmaWNhdGlvbnMYAyADKAsyFi5zZXJ2ZXJqcy5Ob3RpZmljYXRpb24qawoRTm90aWZpY2F0aW9uTGV2ZWwSGwoXTk9USUZJQ0FUSU9OX0xFVkVMX0lORk8QABIbChdOT1RJRklDQVRJT05fTEVWRUxfV0FSThABEhwKGE5PVElGSUNBVElPTl9MRVZFTF9FUlJPUhACYgZwcm90bzM", [file_common]);
+  fileDesc("Cg9zZXJ2ZXItanMucHJvdG8SCHNlcnZlcmpzImoKDkluaXRpYWxpemVJbmZvEhQKDHByb2plY3RfbmFtZRgBIAEoCRIYChByZW5kZXJlcl92ZXJzaW9uGAIgASgJEigKDG9iamVjdF9pbmZvcxgDIAMoCzISLmNvbW1vbi5PYmplY3RJbmZvIksKFFJlbmRlcmVyZWRPYmplY3RJbmZvEgkKAXgYASABKAUSCQoBeRgCIAEoBRINCgV3aWR0aBgDIAEoBRIOCgZoZWlnaHQYBCABKAUijAEKFFNpbmdsZVJlbmRlclJlc3BvbnNlEg0KBW5vbmNlGAEgASgFEkAKFnJlbmRlcmVyZWRfb2JqZWN0X2luZm8YAiABKAsyHi5zZXJ2ZXJqcy5SZW5kZXJlcmVkT2JqZWN0SW5mb0gAEhcKDWVycm9yX21lc3NhZ2UYAyABKAlIAEIKCghyZXNwb25zZSJ1ChJSb290UmVuZGVyUmVzcG9uc2USOgoHc3VjY2VzcxgBIAEoCzInLnNlcnZlcmpzLk1heWJlSW5jb21wbGV0ZVJlbmRlclJlc3BvbnNlSAASFwoNZXJyb3JfbWVzc2FnZRgCIAEoCUgAQgoKCHJlc3BvbnNlIjkKA0xvZxIhCgVsZXZlbBgBIAEoDjISLnNlcnZlcmpzLkxvZ0xldmVsEg8KB21lc3NhZ2UYAiABKAkiSAocT2JqZWN0TGlzdFVwZGF0ZU5vdGlmaWNhdGlvbhIoCgxvYmplY3RfaW5mb3MYASADKAsyEi5jb21tb24uT2JqZWN0SW5mbyKAAQoRTm90aWZpY2F0aW9uRW50cnkSHAoDbG9nGAEgASgLMg0uc2VydmVyanMuTG9nSAASRAoSb2JqZWN0X2xpc3RfdXBkYXRlGAIgASgLMiYuc2VydmVyanMuT2JqZWN0TGlzdFVwZGF0ZU5vdGlmaWNhdGlvbkgAQgcKBWVudHJ5Ij0KDU5vdGlmaWNhdGlvbnMSLAoHZW50cmllcxgBIAMoCzIbLnNlcnZlcmpzLk5vdGlmaWNhdGlvbkVudHJ5InAKHU1heWJlSW5jb21wbGV0ZVJlbmRlclJlc3BvbnNlEjgKEHJlbmRlcl9yZXNwb25zZXMYASADKAsyHi5zZXJ2ZXJqcy5TaW5nbGVSZW5kZXJSZXNwb25zZRIVCg1pc19pbmNvbXBsZXRlGAIgASgIKkcKCExvZ0xldmVsEhIKDkxPR19MRVZFTF9JTkZPEAASEgoOTE9HX0xFVkVMX1dBUk4QARITCg9MT0dfTEVWRUxfRVJST1IQAmIGcHJvdG8z", [file_common]);
 
 /**
  * @generated from message serverjs.InitializeInfo
@@ -139,13 +139,13 @@ export const RootRenderResponseSchema: GenMessage<RootRenderResponse> = /*@__PUR
   messageDesc(file_server_js, 3);
 
 /**
- * @generated from message serverjs.Notification
+ * @generated from message serverjs.Log
  */
-export type Notification = Message<"serverjs.Notification"> & {
+export type Log = Message<"serverjs.Log"> & {
   /**
-   * @generated from field: serverjs.NotificationLevel level = 1;
+   * @generated from field: serverjs.LogLevel level = 1;
    */
-  level: NotificationLevel;
+  level: LogLevel;
 
   /**
    * @generated from field: string message = 2;
@@ -154,11 +154,74 @@ export type Notification = Message<"serverjs.Notification"> & {
 };
 
 /**
- * Describes the message serverjs.Notification.
- * Use `create(NotificationSchema)` to create a new message.
+ * Describes the message serverjs.Log.
+ * Use `create(LogSchema)` to create a new message.
  */
-export const NotificationSchema: GenMessage<Notification> = /*@__PURE__*/
+export const LogSchema: GenMessage<Log> = /*@__PURE__*/
   messageDesc(file_server_js, 4);
+
+/**
+ * @generated from message serverjs.ObjectListUpdateNotification
+ */
+export type ObjectListUpdateNotification = Message<"serverjs.ObjectListUpdateNotification"> & {
+  /**
+   * @generated from field: repeated common.ObjectInfo object_infos = 1;
+   */
+  objectInfos: ObjectInfo[];
+};
+
+/**
+ * Describes the message serverjs.ObjectListUpdateNotification.
+ * Use `create(ObjectListUpdateNotificationSchema)` to create a new message.
+ */
+export const ObjectListUpdateNotificationSchema: GenMessage<ObjectListUpdateNotification> = /*@__PURE__*/
+  messageDesc(file_server_js, 5);
+
+/**
+ * @generated from message serverjs.NotificationEntry
+ */
+export type NotificationEntry = Message<"serverjs.NotificationEntry"> & {
+  /**
+   * @generated from oneof serverjs.NotificationEntry.entry
+   */
+  entry: {
+    /**
+     * @generated from field: serverjs.Log log = 1;
+     */
+    value: Log;
+    case: "log";
+  } | {
+    /**
+     * @generated from field: serverjs.ObjectListUpdateNotification object_list_update = 2;
+     */
+    value: ObjectListUpdateNotification;
+    case: "objectListUpdate";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message serverjs.NotificationEntry.
+ * Use `create(NotificationEntrySchema)` to create a new message.
+ */
+export const NotificationEntrySchema: GenMessage<NotificationEntry> = /*@__PURE__*/
+  messageDesc(file_server_js, 6);
+
+/**
+ * @generated from message serverjs.Notifications
+ */
+export type Notifications = Message<"serverjs.Notifications"> & {
+  /**
+   * @generated from field: repeated serverjs.NotificationEntry entries = 1;
+   */
+  entries: NotificationEntry[];
+};
+
+/**
+ * Describes the message serverjs.Notifications.
+ * Use `create(NotificationsSchema)` to create a new message.
+ */
+export const NotificationsSchema: GenMessage<Notifications> = /*@__PURE__*/
+  messageDesc(file_server_js, 7);
 
 /**
  * @generated from message serverjs.MaybeIncompleteRenderResponse
@@ -173,11 +236,6 @@ export type MaybeIncompleteRenderResponse = Message<"serverjs.MaybeIncompleteRen
    * @generated from field: bool is_incomplete = 2;
    */
   isIncomplete: boolean;
-
-  /**
-   * @generated from field: repeated serverjs.Notification notifications = 3;
-   */
-  notifications: Notification[];
 };
 
 /**
@@ -185,31 +243,31 @@ export type MaybeIncompleteRenderResponse = Message<"serverjs.MaybeIncompleteRen
  * Use `create(MaybeIncompleteRenderResponseSchema)` to create a new message.
  */
 export const MaybeIncompleteRenderResponseSchema: GenMessage<MaybeIncompleteRenderResponse> = /*@__PURE__*/
-  messageDesc(file_server_js, 5);
+  messageDesc(file_server_js, 8);
 
 /**
- * @generated from enum serverjs.NotificationLevel
+ * @generated from enum serverjs.LogLevel
  */
-export enum NotificationLevel {
+export enum LogLevel {
   /**
-   * @generated from enum value: NOTIFICATION_LEVEL_INFO = 0;
+   * @generated from enum value: LOG_LEVEL_INFO = 0;
    */
   INFO = 0,
 
   /**
-   * @generated from enum value: NOTIFICATION_LEVEL_WARN = 1;
+   * @generated from enum value: LOG_LEVEL_WARN = 1;
    */
   WARN = 1,
 
   /**
-   * @generated from enum value: NOTIFICATION_LEVEL_ERROR = 2;
+   * @generated from enum value: LOG_LEVEL_ERROR = 2;
    */
   ERROR = 2,
 }
 
 /**
- * Describes the enum serverjs.NotificationLevel.
+ * Describes the enum serverjs.LogLevel.
  */
-export const NotificationLevelSchema: GenEnum<NotificationLevel> = /*@__PURE__*/
+export const LogLevelSchema: GenEnum<LogLevel> = /*@__PURE__*/
   enumDesc(file_server_js, 0);
 

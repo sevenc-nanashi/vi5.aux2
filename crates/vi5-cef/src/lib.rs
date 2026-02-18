@@ -5,7 +5,7 @@ mod types;
 
 pub use client::{Client, NotificationStream};
 pub use types::{
-    Color, FrameInfo, InitializeResponse, ObjectInfo, Parameter, ParameterDefinition,
-    Notification, NotificationLevel, ParameterType, ParameterValue, RenderRequest, RenderResponse,
+    Color, FrameInfo, InitializeResponse, LogNotificationLevel, Notification, ObjectInfo,
+    Parameter, ParameterDefinition, ParameterType, ParameterValue, RenderRequest, RenderResponse,
     RenderResponseData,
 };
