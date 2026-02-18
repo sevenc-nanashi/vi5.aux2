@@ -1,8 +1,9 @@
-import type { UserConfig as ViteConfig } from "vite";
+import type { PluginOption, UserConfig as ViteConfig } from "vite";
 
 export interface Config {
   name: string;
   vite?: ViteConfig;
+  vitePlugins?: PluginOption[];
   hookConsoleLog?: boolean;
 }
 

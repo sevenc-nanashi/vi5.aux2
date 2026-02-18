@@ -43,9 +43,10 @@ async function createServer(
   config: Config,
   restartServer: () => Promise<void>,
 ) {
+  const userPlugins = config.vitePlugins ?? [];
   return createViteServer({
     root,
-    plugins: [createVi5Plugin(config, restartServer)],
+    plugins: [...userPlugins, createVi5Plugin(config, restartServer)],
     server: {
       port: port || (await getUnusedPort(3000)),
     },
