@@ -259,7 +259,7 @@ impl InternalModule {
                                 .batch_render(uncached_requests) => {
                                     result.map_err(|e| anyhow::anyhow!("Batch render failed: {}", e))
                                 }
-                            _ = tokio::time::sleep(std::time::Duration::from_secs(10)) => {
+                            _ = tokio::time::sleep(std::time::Duration::from_secs(5)) => {
                                 Err(anyhow::anyhow!("Batch render timed out"))
                             }
                         }

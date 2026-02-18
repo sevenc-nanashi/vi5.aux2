@@ -335,7 +335,7 @@ export class Vi5Runtime {
           jsResponses.push({
             type: "error",
             renderNonce: req.renderNonce,
-            error: `Error during rendering: ${e}`,
+            error: `Error during rendering: ${String(e)}`,
           });
         }
       }
@@ -356,13 +356,13 @@ export class Vi5Runtime {
       }
       canvases.clear();
     } catch (e) {
-      runtimeLog.error`Error during batch rendering: ${e}`;
+      runtimeLog.error`Error during batch rendering: ${String(e)}`;
       this.drawMessage(
         RootRenderResponseSchema,
         {
           response: {
             case: "errorMessage",
-            value: `Error during batch rendering: ${e}`,
+            value: `Error during batch rendering: ${String(e)}`,
           },
         },
         nonce,
