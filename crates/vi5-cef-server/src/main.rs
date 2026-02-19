@@ -129,7 +129,11 @@ pub async fn main_server(
     let addr = format!("[::1]:{}", port).parse().unwrap();
     tracing::info!("Starting gRPC server on {}", addr);
     tonic::transport::Server::builder()
-        .add_service(crate::protocol::libserver::lib_server_server::LibServerServer::new(server))
+        .max_frame_size((1 << 24) - 1)
+        .add_service(
+            crate::protocol::libserver::lib_server_server::LibServerServer::new(server)
+                .max_decoding_message_size(usize::MAX),
+        )
         .add_service(
             tonic_reflection::server::Builder::configure()
                 .register_encoded_file_descriptor_set(

@@ -407,6 +407,9 @@ export class Vi5Runtime {
 
   purgeCache() {
     runtimeLog.info`Purging context cache (${contexts.size} contexts)`;
+    for (const ctx of contexts.values()) {
+      ctx.teardown();
+    }
     contexts.clear();
     initializePromises.clear();
   }

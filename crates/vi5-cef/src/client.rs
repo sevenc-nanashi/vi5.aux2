@@ -22,7 +22,8 @@ impl Client {
             tonic::transport::Endpoint::new(dst)?
                 .connect_timeout(std::time::Duration::from_secs(60)),
         )
-        .await?;
+        .await?
+        .max_decoding_message_size(usize::MAX);
         Ok(Self {
             inner,
             next_nonce: 1,

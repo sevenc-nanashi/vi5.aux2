@@ -28,5 +28,8 @@ fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
 fn fs(in: VsOut) -> @location(0) vec4<f32> {
     let uv = vec2<f32>(in.uv.x, 1.0 - in.uv.y);
     let color = textureSample(src_tex, src_sampler, uv);
-    return vec4<f32>(color.rgb, color.a);
+    if (color.a <= 0.0) {
+        return vec4<f32>(0.0, 0.0, 0.0, 0.0);
+    }
+    return vec4<f32>(color.rgb / color.a, color.a);
 }
