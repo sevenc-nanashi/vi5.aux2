@@ -103,6 +103,7 @@ local render_params = {
   effect_id = obj.effect_id,
   batch_size = batch_size,
   freeze = freeze,
+  offline = obj.getinfo("saving"),
 }
 
 local image, w, h = internal.call_object(

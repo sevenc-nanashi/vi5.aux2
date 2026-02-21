@@ -12,6 +12,7 @@ message RenderRequest {
   int64 object_id = 3;
   FrameInfo frame_info = 4;
   repeated Parameter parameters = 5;
+  bool is_offline = 6;
 }
 
 message FrameInfo {

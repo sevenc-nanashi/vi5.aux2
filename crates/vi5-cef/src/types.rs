@@ -76,6 +76,7 @@ pub struct RenderRequest {
     pub object_id: i64,
     pub frame_info: FrameInfo,
     pub parameters: Vec<Parameter>,
+    pub is_offline: bool,
 }
 
 #[derive(Debug, Clone)]

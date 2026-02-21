@@ -13,6 +13,7 @@ struct LuaRenderParams {
     effect_id: i32,
     batch_size: i32,
     freeze: bool,
+    offline: bool,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
@@ -117,6 +118,7 @@ fn build_render_request(
     effect_id: i32,
     params: &HashMap<String, LuaParameter>,
     frame_info: &LuaFrameInfo,
+    is_offline: bool,
 ) -> anyhow::Result<vi5_cef::RenderRequest> {
     let mut param_keys: Vec<&String> = params.keys().collect();
     param_keys.sort();
@@ -164,6 +166,7 @@ fn build_render_request(
             global_time: frame_info.global_time,
         },
         parameters,
+        is_offline,
     })
 }
 
@@ -211,6 +214,7 @@ impl InternalModule {
                         render_params.effect_id,
                         &params,
                         &frame_info,
+                        render_params.offline,
                     )
                 })
                 .collect::<anyhow::Result<Vec<vi5_cef::RenderRequest>>>()?
@@ -370,7 +374,8 @@ impl InternalModule {
                                                 )
                                             })
                                     })
-                                }) {
+                                })
+                            {
                                 log::error!(
                                     "Failed to save cached image for cache_key {}: {}",
                                     cache_key,

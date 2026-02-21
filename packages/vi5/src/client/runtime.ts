@@ -51,7 +51,7 @@ const isMessage = <Desc extends protobuf.DescMessage>(
 };
 
 // const initializePromises: Record<bigint, Promise<void>> = {};
-const initializePromises = new Map<bigint, Promise<void>>();
+const initializePromises = new Map<bigint, Promise<Vi5Context>>();
 const contexts = new Map<bigint, Vi5Context>();
 
 async function maybeInitializeContext<T extends ParameterDefinitions>(
@@ -61,7 +61,12 @@ async function maybeInitializeContext<T extends ParameterDefinitions>(
   parameter: InferParameters<T>,
 ): Promise<Vi5Context | undefined> {
   if (!initializePromises.has(objectId)) {
-    const initPromise = initializeContext(objectId, object, renderRequest, parameter);
+    const initPromise = initializeContext(
+      objectId,
+      object,
+      renderRequest,
+      parameter,
+    );
     initializePromises.set(objectId, initPromise);
 
     // 一瞬だけ待ってあげる
@@ -76,7 +81,10 @@ async function initializeContext<T extends ParameterDefinitions>(
   object: Vi5Object<T>,
   renderRequest: RenderRequest,
   parameter: InferParameters<T>,
-): Promise<void> {
+): Promise<Vi5Context> {
+  if (contexts.has(id)) {
+    return contexts.get(id)!;
+  }
   const ctx = new Vi5Context();
   // TODO: エラー処理
   new p5((sketch) => {
@@ -95,6 +103,8 @@ async function initializeContext<T extends ParameterDefinitions>(
     sketch.noLoop();
     sketch.setup();
   });
+  await initializePromises.get(id);
+  return ctx;
 }
 function grpcParamsToJsParams<T extends ParameterDefinitions>(
   grpcParams: Parameter[],
@@ -129,7 +139,9 @@ function grpcParamsToJsParams<T extends ParameterDefinitions>(
   return params as InferParameters<T>;
 }
 
-function toGrpcParameterType(definition: ParameterDefinitions[string]): GrpcParameterType {
+function toGrpcParameterType(
+  definition: ParameterDefinitions[string],
+): GrpcParameterType {
   switch (definition.type) {
     case "string":
       return protobuf.create(ParameterTypeSchema, {
@@ -297,8 +309,8 @@ export class Vi5Runtime {
           protobuf.create(ObjectInfoSchema, {
             id: obj.id,
             label: obj.label,
-            parameterDefinitions: Object.entries(obj.parameters).map(([key, def]) =>
-              toGrpcParameterDefinition(key, def),
+            parameterDefinitions: Object.entries(obj.parameters).map(
+              ([key, def]) => toGrpcParameterDefinition(key, def),
             ),
           }),
       );
@@ -426,7 +438,9 @@ export class Vi5Runtime {
     }
 
     const params = grpcParamsToJsParams(request.parameters);
-    const ctx = await maybeInitializeContext(request.objectId, object, request, params);
+    const ctx = request.isOffline
+      ? await initializeContext(request.objectId, object, request, params)
+      : await maybeInitializeContext(request.objectId, object, request, params);
     if (!ctx) {
       runtimeLog.info`Object not initialized yet: ${request.object}`;
       return {

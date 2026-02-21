@@ -41,6 +41,7 @@ impl RenderRequest {
                 .into_iter()
                 .map(Parameter::into_proto)
                 .collect(),
+            is_offline: self.is_offline,
         }
     }
 }
