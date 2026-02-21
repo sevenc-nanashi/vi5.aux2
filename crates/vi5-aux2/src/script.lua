@@ -2,6 +2,7 @@
 --LABEL--
 --group:Performance
 --track@batch_size:Batch Size,1,16,10,1
+--check@freeze:Freeze,false
 --END_HEADER
 local internal = obj.module("--MODULE_NAME--")
 
@@ -97,10 +98,15 @@ for i = 0, batch_size - 1 do
   batch_frame_info[i + 1] = get_frame_info_at(i)
 end
 
+local render_params = {
+  object_name = object_id,
+  effect_id = obj.effect_id,
+  batch_size = batch_size,
+  freeze = freeze,
+}
+
 local image, w, h = internal.call_object(
-  object_id,
-  obj.effect_id,
-  batch_size,
+  to_json(render_params),
   to_json(batch_serialized_params),
   to_json(batch_frame_info)
 )

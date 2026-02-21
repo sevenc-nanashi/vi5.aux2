@@ -123,8 +123,9 @@ impl crate::protocol::libserver::lib_server_server::LibServer for MainServer {
         &self,
         _request: tonic::Request<crate::protocol::common::Void>,
     ) -> Result<tonic::Response<Self::SubscribeNotificationsStream>, tonic::Status> {
-        let rx = self.render_loop.subscribe_notifications();
-        let stream = BroadcastStream::new(rx).filter_map(|item| async move {
+        let (backlog, rx) = self.render_loop.subscribe_notifications();
+        let backlog_stream = futures::stream::iter(backlog.into_iter().map(Ok));
+        let live_stream = BroadcastStream::new(rx).filter_map(|item| async move {
             match item {
                 Ok(notification) => Some(Ok(notification)),
                 Err(err) => {
@@ -133,6 +134,7 @@ impl crate::protocol::libserver::lib_server_server::LibServer for MainServer {
                 }
             }
         });
+        let stream = backlog_stream.chain(live_stream);
         Ok(tonic::Response::new(Box::pin(stream)))
     }
 

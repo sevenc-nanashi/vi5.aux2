@@ -110,6 +110,7 @@ pub struct RenderLoop {
     initialized:
         Arc<std::sync::Mutex<Option<anyhow::Result<crate::protocol::serverjs::InitializeInfo>>>>,
     notification_tx: broadcast::Sender<crate::protocol::libserver::Notification>,
+    notification_history: Arc<std::sync::Mutex<Vec<crate::protocol::libserver::Notification>>>,
 }
 
 impl RenderLoop {
@@ -119,13 +120,23 @@ impl RenderLoop {
             browser,
             initialized: Arc::new(std::sync::Mutex::new(None)),
             notification_tx,
+            notification_history: Arc::new(std::sync::Mutex::new(Vec::new())),
         }
     }
 
     pub fn subscribe_notifications(
         &self,
-    ) -> broadcast::Receiver<crate::protocol::libserver::Notification> {
-        self.notification_tx.subscribe()
+    ) -> (
+        Vec<crate::protocol::libserver::Notification>,
+        broadcast::Receiver<crate::protocol::libserver::Notification>,
+    ) {
+        let history_guard = self
+            .notification_history
+            .lock()
+            .expect("Failed to lock notification history");
+        let rx = self.notification_tx.subscribe();
+        let history = history_guard.clone();
+        (history, rx)
     }
 
     pub async fn assert_initialized(&self) -> anyhow::Result<()> {
@@ -170,11 +181,16 @@ impl RenderLoop {
                 .expect("Failed to lock initialization state");
             *initialized = None;
         }
+        self.notification_history
+            .lock()
+            .expect("Failed to lock notification history")
+            .clear();
         PAINT_CALLBACKS.clear();
         PAINT_CALLBACKS.insert(
             NOTIFICATION_NONCE,
             Box::new({
                 let notification_tx = self.notification_tx.clone();
+                let notification_history = self.notification_history.clone();
                 move |buffer, _, _| {
                     match read_message_from_image::<crate::protocol::serverjs::Notifications>(
                         buffer,
@@ -194,7 +210,11 @@ impl RenderLoop {
                                                     ),
                                                 ),
                                             };
-                                        let _ = notification_tx.send(log_notification);
+                                        publish_notification(
+                                            &notification_tx,
+                                            &notification_history,
+                                            log_notification,
+                                        );
                                     }
                                     Some(crate::protocol::serverjs::notification_entry::Entry::ObjectListUpdate(object_list)) => {
                                         let object_infos_notification =
@@ -207,7 +227,11 @@ impl RenderLoop {
                                                     ),
                                                 )
                                             };
-                                        let _ = notification_tx.send(object_infos_notification);
+                                        publish_notification(
+                                            &notification_tx,
+                                            &notification_history,
+                                            object_infos_notification,
+                                        );
                                     }
                                     None => {
                                         tracing::warn!("Received notification with unparsable entry");
@@ -456,6 +480,28 @@ impl RenderLoop {
         Ok(())
     }
 }
+
+fn publish_notification(
+    notification_tx: &broadcast::Sender<crate::protocol::libserver::Notification>,
+    notification_history: &Arc<std::sync::Mutex<Vec<crate::protocol::libserver::Notification>>>,
+    notification: crate::protocol::libserver::Notification,
+) {
+    const MAX_NOTIFICATION_HISTORY: usize = 256;
+
+    {
+        let mut history = notification_history
+            .lock()
+            .expect("Failed to lock notification history");
+        history.push(notification.clone());
+        if history.len() > MAX_NOTIFICATION_HISTORY {
+            let drain_count = history.len() - MAX_NOTIFICATION_HISTORY;
+            history.drain(0..drain_count);
+        }
+    }
+
+    let _ = notification_tx.send(notification);
+}
+
 fn read_message_from_image<T: Message + Default>(buffer: &[u8]) -> anyhow::Result<T> {
     // H1 H2 H3 A_ N1 N2 N3 A_ N4 L1 L2 A_ L3 L4 M1 A_ M2 M3 M4 A_ M5 ...
     // H: header bytes

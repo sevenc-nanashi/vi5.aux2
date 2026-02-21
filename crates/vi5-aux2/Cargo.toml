@@ -11,7 +11,9 @@ anyhow = "1.0.100"
 # aviutl2 = { version = "0.11.2", features = ["serde"] }
 aviutl2 = { features = ["serde"], git = "https://github.com/sevenc-nanashi/aviutl2-rs" }
 dashmap = "6.1.0"
+dirs = "6.0.0"
 futures = "0.3.31"
+image = "0.25.9"
 native-dialog = { version = "0.9.6", features = ["async"] }
 process_path = "0.1.4"
 rfd = "0.17.2"

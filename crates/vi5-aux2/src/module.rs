@@ -8,6 +8,14 @@ use aviutl2::{AnyResult, AviUtl2Info, generic::GenericPlugin, log, module::Scrip
 use crate::Vi5Aux2;
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
+struct LuaRenderParams {
+    object_name: String,
+    effect_id: i32,
+    batch_size: i32,
+    freeze: bool,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 #[serde(tag = "type", content = "value")]
 enum LuaParameter {
     Str(String),
@@ -38,6 +46,8 @@ pub struct InternalModule;
 static TEMPORARY_BUFFER: std::sync::LazyLock<dashmap::DashMap<i32, Vec<u8>>> =
     std::sync::LazyLock::new(dashmap::DashMap::new);
 static RENDER_CACHE: std::sync::LazyLock<dashmap::DashMap<i32, RenderCachePerEffectEntry>> =
+    std::sync::LazyLock::new(dashmap::DashMap::new);
+static IS_FROZEN: std::sync::LazyLock<dashmap::DashMap<i32, bool>> =
     std::sync::LazyLock::new(dashmap::DashMap::new);
 
 #[derive(Debug, Clone, Default)]
@@ -174,15 +184,15 @@ impl aviutl2::module::ScriptModule for InternalModule {
 impl InternalModule {
     fn call_object(
         &self,
-        object_name: String,
-        effect_id: i32,
-        batch_size: i32,
+        render_params: String,
         params_json: String,
         frame_info_json: String,
     ) -> aviutl2::AnyResult<(*const u8, usize, usize)> {
-        let batch_size: usize = batch_size
+        let render_params: LuaRenderParams = serde_json::from_str(&render_params)?;
+        let batch_size: usize = render_params
+            .batch_size
             .try_into()
-            .map_err(|_| anyhow::anyhow!("Invalid batch_size: {}", batch_size))?;
+            .map_err(|_| anyhow::anyhow!("Invalid batch_size: {}", render_params.batch_size))?;
         let batch_params: Vec<HashMap<String, LuaParameter>> = serde_json::from_str(&params_json)?;
         let batch_frame_info: Vec<LuaFrameInfo> = serde_json::from_str(&frame_info_json)?;
         let batch_render_request = if batch_params.len() != batch_frame_info.len() {
@@ -196,14 +206,59 @@ impl InternalModule {
                 .into_iter()
                 .zip(batch_frame_info.into_iter())
                 .map(|(params, frame_info)| {
-                    build_render_request(object_name.clone(), effect_id, &params, &frame_info)
+                    build_render_request(
+                        render_params.object_name.clone(),
+                        render_params.effect_id,
+                        &params,
+                        &frame_info,
+                    )
                 })
                 .collect::<anyhow::Result<Vec<vi5_cef::RenderRequest>>>()?
         };
+
+        let mut current_freeze_state = IS_FROZEN
+            .entry(render_params.effect_id)
+            .or_insert(render_params.freeze);
+        let cache_dir = dirs::cache_dir()
+            .ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?
+            .join("vi5_aux2_cache")
+            .join(render_params.effect_id.to_string());
+        match (render_params.freeze, *current_freeze_state) {
+            (true, false) => {
+                log::info!("Freezing cache for effect_id {}", render_params.effect_id);
+                *current_freeze_state = true;
+            }
+            (false, true) => {
+                log::info!("Unfreezing cache for effect_id {}", render_params.effect_id);
+                std::fs::remove_dir_all(&cache_dir).ok();
+                *current_freeze_state = false;
+            }
+            _ => {}
+        }
+
         let batch_cache_keys: Vec<u64> =
             batch_render_request.iter().map(compute_cache_key).collect();
 
-        let mut cached_entries = RENDER_CACHE.entry(effect_id).or_default();
+        if *current_freeze_state {
+            log::debug!(
+                "Cache is frozen for effect_id {}, skipping rendering and using existing cache if available",
+                render_params.effect_id
+            );
+            let cache_path = cache_dir.join(format!("{}.webp", batch_cache_keys[0]));
+            if let Ok(opened) = image::open(&cache_path).map(|img| img.into_rgba8()) {
+                log::debug!(
+                    "Loaded cached image from {:?} for effect_id {}",
+                    cache_path,
+                    render_params.effect_id
+                );
+                let (width, height) = opened.dimensions();
+                let image_data = opened.into_raw();
+                TEMPORARY_BUFFER.insert(render_params.effect_id, image_data.clone());
+                return Ok((image_data.as_ptr(), width as usize, height as usize));
+            }
+        }
+
+        let mut cached_entries = RENDER_CACHE.entry(render_params.effect_id).or_default();
 
         // 以下の条件でレンダリングする：
         // - 大前提：キャッシュされていないフレームがある
@@ -239,7 +294,7 @@ impl InternalModule {
             log::debug!(
                 "Rendering {} uncached requests for effect_id {}",
                 uncached_requests.len(),
-                effect_id
+                render_params.effect_id
             );
             let rendered = Vi5Aux2::with_instance({
                 move |instance| {
@@ -286,6 +341,49 @@ impl InternalModule {
                                 height: height as usize,
                             },
                         );
+
+                        if *current_freeze_state {
+                            let cache_path = cache_dir.join(format!("{}.webp", cache_key));
+                            if let Err(e) = std::fs::create_dir_all(&cache_dir)
+                                .map_err(anyhow::Error::from)
+                                .and_then(|_| {
+                                    image::RgbaImage::from_raw(
+                                        width as _,
+                                        height as _,
+                                        cached_entries
+                                            .images
+                                            .get(&cache_key)
+                                            .unwrap()
+                                            .image_data
+                                            .clone(),
+                                    )
+                                    .ok_or_else(|| {
+                                        anyhow::anyhow!("Failed to create image from raw data")
+                                    })
+                                    .and_then(|img| {
+                                        img.save_with_format(&cache_path, image::ImageFormat::WebP)
+                                            .map_err(|e| {
+                                                anyhow::anyhow!(
+                                                    "Failed to save cached image to {:?}: {}",
+                                                    cache_path,
+                                                    e
+                                                )
+                                            })
+                                    })
+                                }) {
+                                log::error!(
+                                    "Failed to save cached image for cache_key {}: {}",
+                                    cache_key,
+                                    e
+                                );
+                            } else {
+                                log::debug!(
+                                    "Saved cached image to {:?} for cache_key {}",
+                                    cache_path,
+                                    cache_key
+                                );
+                            }
+                        }
                     }
                     vi5_cef::RenderResponseData::Error(err) => {
                         if cache_key == batch_cache_keys[0] {
@@ -303,7 +401,7 @@ impl InternalModule {
             .ok_or_else(|| anyhow::anyhow!("Unreachable: first image not cached"))?;
         let current_image_data = current_image.image_data.clone();
         let current_image_ptr = current_image_data.as_ptr();
-        TEMPORARY_BUFFER.insert(effect_id, current_image_data);
+        TEMPORARY_BUFFER.insert(render_params.effect_id, current_image_data);
         Ok((current_image_ptr, current_image.width, current_image.height))
     }
     fn free_image(&self, id: i32) {
