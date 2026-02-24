@@ -1,7 +1,7 @@
 --PARAMETER_DEFINITIONS--
 --LABEL--
 --group:Performance
---track@batch_size:Batch Size,1,16,10,1
+--track@batch_size:Batch Size,0,50,0,1
 --check@freeze:Freeze,false
 --END_HEADER
 local internal = obj.module("--MODULE_NAME--")
@@ -90,6 +90,10 @@ end
 local batch_serialized_params = {}
 local batch_frame_info = {}
 
+if batch_size <= 0 then
+  batch_size = internal.get_batch_size(obj.effect_id)
+end
+
 for i = 0, batch_size - 1 do
   if obj.frame + i >= obj.totalframe then
     break
@@ -101,7 +105,6 @@ end
 local render_params = {
   object_name = object_id,
   effect_id = obj.effect_id,
-  batch_size = batch_size,
   freeze = freeze,
   offline = obj.getinfo("saving"),
 }

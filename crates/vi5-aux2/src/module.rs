@@ -11,7 +11,6 @@ use crate::Vi5Aux2;
 struct LuaRenderParams {
     object_name: String,
     effect_id: i32,
-    batch_size: i32,
     freeze: bool,
     offline: bool,
 }
@@ -47,6 +46,8 @@ pub struct InternalModule;
 static TEMPORARY_BUFFER: std::sync::LazyLock<dashmap::DashMap<i32, Vec<u8>>> =
     std::sync::LazyLock::new(dashmap::DashMap::new);
 static RENDER_CACHE: std::sync::LazyLock<dashmap::DashMap<i32, RenderCachePerEffectEntry>> =
+    std::sync::LazyLock::new(dashmap::DashMap::new);
+static ADJUSTED_BATCH_SIZE: std::sync::LazyLock<dashmap::DashMap<i32, usize>> =
     std::sync::LazyLock::new(dashmap::DashMap::new);
 static IS_FROZEN: std::sync::LazyLock<dashmap::DashMap<i32, bool>> =
     std::sync::LazyLock::new(dashmap::DashMap::new);
@@ -185,6 +186,10 @@ impl aviutl2::module::ScriptModule for InternalModule {
 
 #[aviutl2::module::functions]
 impl InternalModule {
+    fn get_batch_size(&self, effect_id: i32) -> usize {
+        *ADJUSTED_BATCH_SIZE.entry(effect_id).or_insert(1).value()
+    }
+
     fn call_object(
         &self,
         render_params: String,
@@ -192,10 +197,6 @@ impl InternalModule {
         frame_info_json: String,
     ) -> aviutl2::AnyResult<(*const u8, usize, usize)> {
         let render_params: LuaRenderParams = serde_json::from_str(&render_params)?;
-        let batch_size: usize = render_params
-            .batch_size
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("Invalid batch_size: {}", render_params.batch_size))?;
         let batch_params: Vec<HashMap<String, LuaParameter>> = serde_json::from_str(&params_json)?;
         let batch_frame_info: Vec<LuaFrameInfo> = serde_json::from_str(&frame_info_json)?;
         let batch_render_request = if batch_params.len() != batch_frame_info.len() {
@@ -264,24 +265,7 @@ impl InternalModule {
 
         let mut cached_entries = RENDER_CACHE.entry(render_params.effect_id).or_default();
 
-        // 以下の条件でレンダリングする：
-        // - 大前提：キャッシュされていないフレームがある
-        // - そのうえで、以下のうちいずれかを満たす場合：
-        //   - 現在のフレーム（batch_render_request[0]）のキャッシュが存在しない
-        //   - batch_render_request.len() が batch_size 未満（終端付近）
-        //   - batch_size * (3 / 4) フレーム以上キャッシュが存在しない（一回のレンダリングでまとめて描画したほうがお得）
-        //
-        // NOTE: 3/4という数字はなんとなくなので要調整？
-        let should_render_now = !batch_cache_keys
-            .iter()
-            .all(|key| cached_entries.images.contains_key(key))
-            && (!cached_entries.images.contains_key(&batch_cache_keys[0])
-                || batch_render_request.len() < batch_size
-                || batch_cache_keys
-                    .iter()
-                    .filter(|key| !cached_entries.images.contains_key(key))
-                    .count()
-                    >= (batch_size * 3 / 4));
+        let should_render_now = !cached_entries.images.contains_key(&batch_cache_keys[0]);
 
         if should_render_now {
             let (uncached_keys, uncached_requests) = batch_render_request
@@ -330,6 +314,7 @@ impl InternalModule {
                 .images
                 .retain(|key, _| batch_cache_keys.contains(key));
 
+            let mut largest_size = (0, 0);
             for (response, cache_key) in rendered.into_iter().zip(uncached_keys.into_iter()) {
                 match response.response {
                     vi5_cef::RenderResponseData::Success {
@@ -337,6 +322,12 @@ impl InternalModule {
                         height,
                         image_data,
                     } => {
+                        if width > largest_size.0 {
+                            largest_size.0 = width;
+                        }
+                        if height > largest_size.1 {
+                            largest_size.1 = height;
+                        }
                         cached_entries.images.insert(
                             cache_key,
                             RenderCacheEntry {
@@ -398,6 +389,14 @@ impl InternalModule {
                     }
                 }
             }
+
+            const MAX_BATCH_SIZE: usize = 50;
+            ADJUSTED_BATCH_SIZE.insert(
+                render_params.effect_id,
+                (((2048 / largest_size.0.max(1) / 2) * (2040 / largest_size.1.max(1) / 2))
+                    as usize)
+                    .clamp(1, MAX_BATCH_SIZE),
+            );
         }
 
         let current_image = cached_entries
