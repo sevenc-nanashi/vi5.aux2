@@ -1,6 +1,6 @@
 mod module;
 use std::sync::{
-    Arc, OnceLock,
+    Arc,
     atomic::{AtomicBool, Ordering},
 };
 
@@ -38,7 +38,7 @@ fn get_script_dir(project_name: &str) -> std::path::PathBuf {
         .join(format!("vi5.aux2_{}", project_name))
 }
 
-static EDIT_HANDLE: OnceLock<aviutl2::generic::EditHandle> = OnceLock::new();
+static EDIT_HANDLE: aviutl2::generic::GlobalEditHandle = aviutl2::generic::GlobalEditHandle::new();
 
 #[aviutl2::generic::menus]
 impl Vi5Aux2 {
@@ -136,9 +136,7 @@ impl Vi5Aux2 {
         log::info!("vi5-cef initialized successfully.");
         if !notifications_started.swap(true, Ordering::SeqCst) {
             tokio::spawn(Self::notification_listener_task(
-                project_dir.clone(),
                 info.project_name.clone(),
-                server.clone(),
                 notifications_started,
             ));
         }
@@ -359,9 +357,7 @@ impl Vi5Aux2 {
                 .await?;
             if will_restart {
                 log::info!("Restarting AviUtl2...");
-                if let Some(edit_handle) = EDIT_HANDLE.get() {
-                    edit_handle.restart_host_app();
-                }
+                EDIT_HANDLE.restart_host_app();
             }
         } else if requires_reload {
             log::info!("Script directory updated.");
@@ -397,7 +393,6 @@ impl Vi5Aux2 {
             .arg("--port")
             .arg(VI5_CEF_SERVER_PORT.to_string())
             .arg("--hardware-acceleration")
-            .arg("--devtools")
             .arg("--parent-process")
             .arg(std::process::id().to_string())
             .env("PATH", path)
@@ -446,9 +441,7 @@ impl Vi5Aux2 {
     }
 
     async fn notification_listener_task(
-        project_dir: Arc<tokio::sync::Mutex<Option<String>>>,
         project_name: String,
-        server: Vi5Server,
         notifications_started: Arc<AtomicBool>,
     ) {
         struct NotificationGuard {
@@ -613,7 +606,7 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
         ));
         host_app_handle.register_menus::<Vi5Aux2>();
         host_app_handle.register_script_module(&self.plugin);
-        EDIT_HANDLE.get_or_init(|| host_app_handle.create_edit_handle());
+        EDIT_HANDLE.init(host_app_handle.create_edit_handle());
     }
 
     fn on_project_load(&mut self, project: &mut aviutl2::generic::ProjectFile) {

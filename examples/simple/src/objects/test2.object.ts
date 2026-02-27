@@ -2,8 +2,8 @@ import { colorToP5Tuple, defineObject, numberStep } from "vi5";
 import p5 from "p5";
 
 export default defineObject({
-  id: "test-object",
-  label: "Test Object",
+  id: "test-object-2",
+  label: "Test Object 2",
   parameters: {
     radius: {
       type: "number",

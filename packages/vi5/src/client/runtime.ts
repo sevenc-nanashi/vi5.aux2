@@ -85,7 +85,11 @@ async function initializeContext<T extends ParameterDefinitions>(
   if (contexts.has(id)) {
     return contexts.get(id)!;
   }
+  if (initializePromises.has(id)) {
+    return initializePromises.get(id)!;
+  }
   const ctx = new Vi5Context();
+  const { promise, resolve } = Promise.withResolvers<Vi5Context>();
   // TODO: エラー処理
   new p5((sketch) => {
     ctx.initialize(sketch);
@@ -95,16 +99,18 @@ async function initializeContext<T extends ParameterDefinitions>(
       if (setup instanceof Promise) {
         return setup.then(() => {
           contexts.set(id, ctx);
+          resolve(ctx);
         });
       } else {
         contexts.set(id, ctx);
+        resolve(ctx);
       }
     };
     sketch.noLoop();
     sketch.setup();
   });
-  await initializePromises.get(id);
-  return ctx;
+  initializePromises.set(id, promise);
+  return promise;
 }
 function grpcParamsToJsParams<T extends ParameterDefinitions>(
   grpcParams: Parameter[],

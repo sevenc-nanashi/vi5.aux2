@@ -2,8 +2,8 @@ import { colorToP5Tuple, defineObject, numberStep } from "vi5";
 import p5 from "p5";
 
 export default defineObject({
-  id: "test-object",
-  label: "Test Object",
+  id: "test-object-3",
+  label: "Test Object 3",
   parameters: {
     radius: {
       type: "number",
@@ -19,7 +19,8 @@ export default defineObject({
       label: "Color",
     },
   },
-  setup(ctx, _p, _params) {
+  async setup(ctx, _p, _params) {
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate async setup
     return ctx.createCanvas(200, 200, p5.P2D);
   },
   draw(ctx, p, params) {

@@ -410,7 +410,7 @@ impl InternalModule {
     }
     fn free_image(&self, id: i32) {
         if TEMPORARY_BUFFER.remove(&id).is_some() {
-            log::debug!("Freed image buffer for id {}", id);
+            log::debug!("Disposed image buffer for id {}", id);
         } else {
             log::warn!("No image buffer found for id {}", id);
         }
