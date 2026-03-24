@@ -4,7 +4,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
 };
 
-use aviutl2::{anyhow, log};
+use aviutl2::{anyhow, tracing};
 use tap::prelude::*;
 use tokio::io::AsyncBufReadExt;
 
@@ -69,7 +69,7 @@ impl Vi5Aux2 {
 }
 impl Vi5Aux2 {
     fn set_project_dir(&mut self, dir: String) -> anyhow::Result<()> {
-        log::info!("Setting project directory to: {}", dir);
+        tracing::info!("Setting project directory to: {}", dir);
         let metadata = std::fs::metadata(&dir).map_err(|e| {
             anyhow::anyhow!(
                 "指定されたフォルダのメタデータを取得できませんでした: {}: {}",
@@ -94,7 +94,7 @@ impl Vi5Aux2 {
             if let Err(e) =
                 Self::initialize_project_dir(dir, project_dir, server, notifications_started).await
             {
-                log::error!("Failed to initialize project directory: {}", e);
+                tracing::error!("Failed to initialize project directory: {}", e);
             }
         });
         Ok(())
@@ -133,7 +133,7 @@ impl Vi5Aux2 {
             .initialize(&dir, Some(std::time::Duration::from_secs(60)))
             .await
             .map_err(|e| anyhow::anyhow!("vi5-cef クライアントの初期化に失敗しました: {}", e))?;
-        log::info!("vi5-cef initialized successfully.");
+        tracing::info!("vi5-cef initialized successfully.");
         if !notifications_started.swap(true, Ordering::SeqCst) {
             tokio::spawn(Self::notification_listener_task(
                 info.project_name.clone(),
@@ -157,7 +157,7 @@ impl Vi5Aux2 {
             .to_string_lossy()
             .to_string();
         let script_dir = get_script_dir(project_name);
-        log::info!("Project script directory: {:?}", script_dir);
+        tracing::info!("Project script directory: {:?}", script_dir);
         if !script_dir.exists() {
             tokio::fs::create_dir_all(&script_dir).await?;
             requires_restart = true;
@@ -293,7 +293,7 @@ impl Vi5Aux2 {
                     serde_json::to_string(&object.id).unwrap().as_str(),
                 );
             let script_path = script_dir.join(format!("{}.obj2", object.label));
-            log::info!(
+            tracing::info!(
                 "Loaded script for object '{}': {:?}",
                 object.id,
                 script_path
@@ -310,27 +310,30 @@ impl Vi5Aux2 {
                     .take_while(|line| line != &"--END_HEADER")
                     .collect::<Vec<_>>()
                     .join("\n");
-                log::debug!(
+                tracing::debug!(
                     "Comparing existing and new script contents for object '{}'",
                     object.id
                 );
-                log::debug!("Existing headers:\n{}", existing_headers);
-                log::debug!("New headers:\n{}", new_headers);
+                tracing::debug!("Existing headers:\n{}", existing_headers);
+                tracing::debug!("New headers:\n{}", new_headers);
                 if existing_content == script_content {
-                    log::info!(
+                    tracing::info!(
                         "Script file for object '{}' is up to date: {:?}",
                         object.id,
                         script_path
                     );
                 } else {
                     tokio::fs::write(&script_path, script_content).await?;
-                    log::info!(
+                    tracing::info!(
                         "Updated script file for object '{}': {:?}",
                         object.id,
                         script_path
                     );
                     if existing_headers != new_headers {
-                        log::warn!("Script file for object '{}' has updated headers", object.id,);
+                        tracing::warn!(
+                            "Script file for object '{}' has updated headers",
+                            object.id,
+                        );
                         requires_restart = true;
                     } else {
                         requires_reload = true;
@@ -338,7 +341,7 @@ impl Vi5Aux2 {
                 }
             } else {
                 tokio::fs::write(&script_path, script_content).await?;
-                log::info!(
+                tracing::info!(
                     "Created script file for object '{}': {:?}",
                     object.id,
                     script_path
@@ -348,7 +351,7 @@ impl Vi5Aux2 {
         }
 
         if requires_restart {
-            log::info!("Script directory updated requiring restart.");
+            tracing::info!("Script directory updated requiring restart.");
             let will_restart = native_dialog::DialogBuilder::message()
                 .set_title("vi5.aux2")
                 .set_text("オブジェクトが更新されました。\n反映にはAviUtl2の再起動が必要です。今すぐ再起動しますか？")
@@ -356,11 +359,11 @@ impl Vi5Aux2 {
                 .spawn()
                 .await?;
             if will_restart {
-                log::info!("Restarting AviUtl2...");
+                tracing::info!("Restarting AviUtl2...");
                 EDIT_HANDLE.restart_host_app();
             }
         } else if requires_reload {
-            log::info!("Script directory updated.");
+            tracing::info!("Script directory updated.");
             native_dialog::DialogBuilder::message()
                 .set_title("vi5.aux2")
                 .set_text(
@@ -370,7 +373,7 @@ impl Vi5Aux2 {
                 .spawn()
                 .await?;
         } else {
-            log::info!("Script directory is up to date.");
+            tracing::info!("Script directory is up to date.");
         }
 
         Ok(())
@@ -379,10 +382,10 @@ impl Vi5Aux2 {
     async fn start_vi5_cef_server() -> anyhow::Result<(tokio::process::Child, vi5_cef::Client)> {
         let mut path = std::env::var("PATH").unwrap_or_default();
         path.push_str(";C:\\Users\\seven\\.local\\share\\cef");
-        log::info!("Starting vi5-cef server on port {}", VI5_CEF_SERVER_PORT);
+        tracing::info!("Starting vi5-cef server on port {}", VI5_CEF_SERVER_PORT);
         // TODO: 実行ファイルのパスを適切に設定する
         let cef_server_path = std::path::PathBuf::from(format!(
-            "e:/aviutl2/vi5.aux2/target/{}/vi5-cef-server.exe",
+            "e:/ghq/github.com/sevenc-nanashi/vi5.aux2/target/{}/vi5-cef-server.exe",
             if cfg!(debug_assertions) {
                 "debug"
             } else {
@@ -404,7 +407,7 @@ impl Vi5Aux2 {
             .stderr(std::process::Stdio::piped())
             .creation_flags(0x08000000) // CREATE_NO_WINDOW
             .tap(|cmd| {
-                log::info!("Launching vi5-cef server: {cmd:?}");
+                tracing::info!("Launching vi5-cef server: {cmd:?}");
             })
             .spawn()
             .map_err(|e| anyhow::anyhow!("vi5-cef サーバーの起動に失敗しました: {}", e))?;
@@ -414,7 +417,7 @@ impl Vi5Aux2 {
             let mut stdout_reader = tokio::io::BufReader::new(stdout).lines();
             while let Some(line) = stdout_reader.next_line().await.transpose() {
                 if let Ok(line) = line {
-                    log::debug!("[vi5-cef-server stdout] {}", line);
+                    tracing::debug!("[vi5-cef-server stdout] {}", line);
                 }
             }
         });
@@ -422,7 +425,7 @@ impl Vi5Aux2 {
             let mut stderr_reader = tokio::io::BufReader::new(stderr).lines();
             while let Some(line) = stderr_reader.next_line().await.transpose() {
                 if let Ok(line) = line {
-                    log::error!("[vi5-cef-server stderr] {}", line);
+                    tracing::error!("[vi5-cef-server stderr] {}", line);
                 }
             }
         });
@@ -463,7 +466,7 @@ impl Vi5Aux2 {
             {
                 Ok(client) => client,
                 Err(e) => {
-                    log::error!("Failed to connect for notifications: {}", e);
+                    tracing::error!("Failed to connect for notifications: {}", e);
                     return;
                 }
             };
@@ -471,44 +474,44 @@ impl Vi5Aux2 {
         let mut stream = match client.subscribe_notifications().await {
             Ok(stream) => stream,
             Err(e) => {
-                log::error!("Failed to subscribe notifications: {}", e);
+                tracing::error!("Failed to subscribe notifications: {}", e);
                 return;
             }
         };
-        log::info!("Started notification listener task");
+        tracing::info!("Started notification listener task");
 
         loop {
             match stream.message().await {
                 Ok(Some(notification)) => match notification {
                     vi5_cef::Notification::Log(log) => match log.level {
                         vi5_cef::LogNotificationLevel::Info => {
-                            log::info!("vi5 notification: {}", log.message);
+                            tracing::info!("vi5 notification: {}", log.message);
                         }
                         vi5_cef::LogNotificationLevel::Warn => {
-                            log::warn!("vi5 notification: {}", log.message);
+                            tracing::warn!("vi5 notification: {}", log.message);
                         }
                         vi5_cef::LogNotificationLevel::Error => {
-                            log::error!("vi5 notification: {}", log.message);
+                            tracing::error!("vi5 notification: {}", log.message);
                         }
                     },
                     vi5_cef::Notification::ObjectInfos(object_infos) => {
-                        log::info!(
+                        tracing::info!(
                             "Received object infos notification with {} objects",
                             object_infos.object_infos.len()
                         );
                         if let Err(e) =
                             Self::update_script_dir(&project_name, &object_infos.object_infos).await
                         {
-                            log::error!("Failed to update script directory: {}", e);
+                            tracing::error!("Failed to update script directory: {}", e);
                         }
                     }
                 },
                 Ok(None) => {
-                    log::info!("Notification stream closed");
+                    tracing::info!("Notification stream closed");
                     break;
                 }
                 Err(e) => {
-                    log::error!("Notification stream error: {}", e);
+                    tracing::error!("Notification stream error: {}", e);
                     break;
                 }
             }
@@ -524,7 +527,7 @@ impl Vi5Aux2 {
                         Ok(Some(status)) => Some(status),
                         Ok(None) => None,
                         Err(e) => {
-                            log::error!("Failed to wait for vi5-cef server process: {}", e);
+                            tracing::error!("Failed to wait for vi5-cef server process: {}", e);
                             return;
                         }
                     }
@@ -532,13 +535,13 @@ impl Vi5Aux2 {
                 if let Some(status) = status {
                     match status.code() {
                         Some(0) => {
-                            log::info!("vi5-cef server has exited normally.");
+                            tracing::info!("vi5-cef server has exited normally.");
                         }
                         Some(code) => {
-                            log::error!("vi5-cef server has exited (exit code: {})", code);
+                            tracing::error!("vi5-cef server has exited (exit code: {})", code);
                         }
                         None => {
-                            log::error!("vi5-cef server has exited (unknown exit code)");
+                            tracing::error!("vi5-cef server has exited (unknown exit code)");
                         }
                     }
                     return;
@@ -582,9 +585,16 @@ impl RuntimeHandle {
 
 impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
     fn new(info: aviutl2::AviUtl2Info) -> aviutl2::AnyResult<Self> {
-        aviutl2::logger::LogBuilder::new()
-            .filter_level(aviutl2::logger::LevelFilter::Debug)
+        aviutl2::tracing_subscriber::fmt()
+            .with_max_level(if cfg!(debug_assertions) {
+                tracing::Level::DEBUG
+            } else {
+                tracing::Level::INFO
+            })
+            .event_format(aviutl2::logger::AviUtl2Formatter)
+            .with_writer(aviutl2::logger::AviUtl2LogWriter)
             .init();
+
         Ok(Self {
             runtime: Arc::new(std::sync::RwLock::new(Some(
                 tokio::runtime::Builder::new_multi_thread()
@@ -599,11 +609,17 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
         })
     }
 
+    fn plugin_info(&self) -> aviutl2::generic::GenericPluginTable {
+        aviutl2::generic::GenericPluginTable {
+            name: "vi5.aux2".to_string(),
+            information: format!(
+                "vi5.aux2 / https://github.com/sevenc-nanashi/vi5.aux2 / v{}",
+                env!("CARGO_PKG_VERSION")
+            ),
+        }
+    }
+
     fn register(&mut self, host_app_handle: &mut aviutl2::generic::HostAppHandle) {
-        host_app_handle.set_plugin_information(&format!(
-            "vi5.aux2 / https://github.com/sevenc-nanashi/vi5.aux2 / v{}",
-            env!("CARGO_PKG_VERSION")
-        ));
         host_app_handle.register_menus::<Vi5Aux2>();
         host_app_handle.register_script_module(&self.plugin);
         EDIT_HANDLE.init(host_app_handle.create_edit_handle());
@@ -614,18 +630,28 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
         match project.deserialize::<String>("project_dir") {
             Ok(dir) => {
                 if dir.is_empty() {
-                    log::info!("No project directory set in project file.");
+                    tracing::info!("No project directory set in project file.");
                 } else {
-                    log::info!("Loaded project directory from project file: {}", dir);
-                    if let Err(e) = self.set_project_dir(dir) {
-                        log::error!("Failed to set project directory: {}", e);
+                    tracing::info!("Loaded project directory from project file: {}", dir);
+                    // if let Err(e) = self.set_project_dir(dir) {
+                    //     tracing::error!("Failed to set project directory: {}", e);
+                    // }
+                    match self.set_project_dir(dir) {
+                        Ok(()) => {
+                            return;
+                        }
+                        Err(e) => {
+                            tracing::error!("Failed to set project directory: {}", e);
+                        }
                     }
                 }
             }
             Err(e) => {
-                log::error!("Failed to get project parameter: {}", e);
+                tracing::error!("Failed to get project parameter: {}", e);
             }
         }
+
+        self.project_dir.blocking_lock().take();
     }
 
     fn on_clear_cache(&mut self, _edit_section: &aviutl2::generic::EditSection) {
@@ -635,11 +661,11 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
             async move {
                 let mut server = server.lock().await;
                 let Some((_, client)) = server.as_mut() else {
-                    log::warn!("vi5-cef server is not running, cannot purge cache");
+                    tracing::warn!("vi5-cef server is not running, cannot purge cache");
                     return;
                 };
                 if let Err(e) = client.purge_cache().await {
-                    log::error!("Failed to purge vi5-cef cache: {}", e);
+                    tracing::error!("Failed to purge vi5-cef cache: {}", e);
                 }
             }
         });
@@ -652,7 +678,7 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
             "project_dir",
             &self.project_dir.blocking_lock().as_deref().unwrap_or(""),
         ) {
-            log::error!("Failed to set project parameter: {}", e);
+            tracing::error!("Failed to set project parameter: {}", e);
         }
     }
 }
@@ -660,7 +686,7 @@ impl aviutl2::generic::GenericPlugin for Vi5Aux2 {
 impl Drop for Vi5Aux2 {
     fn drop(&mut self) {
         if let Some((child, mut client)) = self.server.blocking_lock().take() {
-            log::info!("Shutting down vi5-cef server...");
+            tracing::info!("Shutting down vi5-cef server...");
             futures::executor::block_on(async {
                 let _ = client.shutdown().await;
                 let mut child = child.lock().await;
@@ -668,7 +694,7 @@ impl Drop for Vi5Aux2 {
             });
         }
         if let Some(runtime) = self.runtime.write().unwrap().take() {
-            log::info!("Shutting down Tokio runtime...");
+            tracing::info!("Shutting down Tokio runtime...");
             runtime.shutdown_timeout(std::time::Duration::from_secs(5));
         }
     }

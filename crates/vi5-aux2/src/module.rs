@@ -3,7 +3,9 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use aviutl2::{AnyResult, AviUtl2Info, generic::GenericPlugin, log, module::ScriptModuleFunctions};
+use aviutl2::{
+    AnyResult, AviUtl2Info, generic::GenericPlugin, module::ScriptModuleFunctions, tracing,
+};
 
 use crate::Vi5Aux2;
 
@@ -230,11 +232,11 @@ impl InternalModule {
             .join(render_params.effect_id.to_string());
         match (render_params.freeze, *current_freeze_state) {
             (true, false) => {
-                log::info!("Freezing cache for effect_id {}", render_params.effect_id);
+                tracing::info!("Freezing cache for effect_id {}", render_params.effect_id);
                 *current_freeze_state = true;
             }
             (false, true) => {
-                log::info!("Unfreezing cache for effect_id {}", render_params.effect_id);
+                tracing::info!("Unfreezing cache for effect_id {}", render_params.effect_id);
                 std::fs::remove_dir_all(&cache_dir).ok();
                 *current_freeze_state = false;
             }
@@ -245,13 +247,13 @@ impl InternalModule {
             batch_render_request.iter().map(compute_cache_key).collect();
 
         if *current_freeze_state {
-            log::debug!(
+            tracing::debug!(
                 "Cache is frozen for effect_id {}, skipping rendering and using existing cache if available",
                 render_params.effect_id
             );
             let cache_path = cache_dir.join(format!("{}.webp", batch_cache_keys[0]));
             if let Ok(opened) = image::open(&cache_path).map(|img| img.into_rgba8()) {
-                log::debug!(
+                tracing::debug!(
                     "Loaded cached image from {:?} for effect_id {}",
                     cache_path,
                     render_params.effect_id
@@ -279,7 +281,7 @@ impl InternalModule {
                     }
                 })
                 .unzip::<_, _, Vec<_>, Vec<_>>();
-            log::debug!(
+            tracing::debug!(
                 "Rendering {} uncached requests for effect_id {}",
                 uncached_requests.len(),
                 render_params.effect_id
@@ -367,13 +369,13 @@ impl InternalModule {
                                     })
                                 })
                             {
-                                log::error!(
+                                tracing::error!(
                                     "Failed to save cached image for cache_key {}: {}",
                                     cache_key,
                                     e
                                 );
                             } else {
-                                log::debug!(
+                                tracing::debug!(
                                     "Saved cached image to {:?} for cache_key {}",
                                     cache_path,
                                     cache_key
@@ -410,9 +412,9 @@ impl InternalModule {
     }
     fn free_image(&self, id: i32) {
         if TEMPORARY_BUFFER.remove(&id).is_some() {
-            log::debug!("Disposed image buffer for id {}", id);
+            tracing::debug!("Disposed image buffer for id {}", id);
         } else {
-            log::warn!("No image buffer found for id {}", id);
+            tracing::warn!("No image buffer found for id {}", id);
         }
     }
 }

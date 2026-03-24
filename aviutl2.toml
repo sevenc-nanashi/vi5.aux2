@@ -1,7 +1,8 @@
 #:schema ./.aviutl2-cli/aviutl2.schema.json
 # 設定ファイルについては https://github.com/sevenc-nanashi/aviutl2-cli を参照してください。
 [project]
-name = "vi5-aux2"
+id = "sevenc-nanashi.vi5-aux2"
+name = "vi5.aux2"
 version = "0.1.0"
 
 [artifacts.vi5_aux2]

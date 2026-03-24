@@ -24,7 +24,7 @@ export default defineObject({
   },
   draw(ctx, p, params) {
     console.log("Drawing with params:", params);
-    p.background(100);
+    p.background(255);
     p.fill(...colorToP5Tuple(params.color));
     p.textAlign(ctx.p.CENTER, ctx.p.CENTER);
     p.textSize(16);
