@@ -61,12 +61,7 @@ async function maybeInitializeContext<T extends ParameterDefinitions>(
   parameter: InferParameters<T>,
 ): Promise<Vi5Context | undefined> {
   if (!initializePromises.has(objectId)) {
-    const initPromise = initializeContext(
-      objectId,
-      object,
-      renderRequest,
-      parameter,
-    );
+    const initPromise = initializeContext(objectId, object, renderRequest, parameter);
     initializePromises.set(objectId, initPromise);
 
     // 一瞬だけ待ってあげる
@@ -145,9 +140,7 @@ function grpcParamsToJsParams<T extends ParameterDefinitions>(
   return params as InferParameters<T>;
 }
 
-function toGrpcParameterType(
-  definition: ParameterDefinitions[string],
-): GrpcParameterType {
+function toGrpcParameterType(definition: ParameterDefinitions[string]): GrpcParameterType {
   switch (definition.type) {
     case "string":
       return protobuf.create(ParameterTypeSchema, {
@@ -279,6 +272,7 @@ export class Vi5Runtime {
   #renderQueue = new RenderQueue();
   #notifyCounter = new DisposableCounterFactory();
   #logQueue: { level: NotificationLevelKey; message: string }[] = [];
+  #initialized = false;
 
   constructor(public projectName: string) {
     this.canvas = document.getElementById("vi5-canvas") as HTMLCanvasElement;
@@ -286,6 +280,10 @@ export class Vi5Runtime {
   }
 
   async init() {
+    if (this.#initialized) {
+      throw new Error("Vi5Runtime is already initialized.");
+    }
+    this.#initialized = true;
     await this.#renderQueue.render(priorityLevels.init, () => {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.drawMessage(
@@ -309,14 +307,17 @@ export class Vi5Runtime {
   }
 
   #notifyObjectInfos() {
+    if (!this.#initialized) {
+      throw new Error("Vi5Runtime is not initialized yet.");
+    }
     this.#renderQueue.render(priorityLevels.notify, () => {
       const objectInfos = Array.from(this.objects.values()).map(
         (obj): ObjectInfo =>
           protobuf.create(ObjectInfoSchema, {
             id: obj.id,
             label: obj.label,
-            parameterDefinitions: Object.entries(obj.parameters).map(
-              ([key, def]) => toGrpcParameterDefinition(key, def),
+            parameterDefinitions: Object.entries(obj.parameters).map(([key, def]) =>
+              toGrpcParameterDefinition(key, def),
             ),
           }),
       );
@@ -568,13 +569,17 @@ export class Vi5Runtime {
 
     this.purgeCache();
 
-    this.#notifyObjectInfos();
+    if (this.#initialized) {
+      this.#notifyObjectInfos();
+    }
   }
   unregister(id: string) {
     runtimeLog.info`Unregistering object: ${id}`;
     this.objects.delete(id);
 
-    this.#notifyObjectInfos();
+    if (this.#initialized) {
+      this.#notifyObjectInfos();
+    }
   }
 
   get isNotifying() {

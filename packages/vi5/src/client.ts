@@ -27,6 +27,7 @@ for (const objectName of __vi5_data__.objectList) {
 }
 Promise.allSettled(promises).then(() => {
   window.__vi5__.init();
+  window.__vi5__.isNotifying = false;
   if (__vi5_data__.hookConsoleLog) {
     hookConsole();
   }
