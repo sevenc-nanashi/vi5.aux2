@@ -6,7 +6,7 @@ use std::sync::{
 
 use aviutl2::{anyhow, tracing};
 use tap::prelude::*;
-use tokio::io::AsyncBufReadExt;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 
 type Vi5Server = Arc<
     tokio::sync::Mutex<
@@ -32,10 +32,10 @@ static CURRENT_PROJECT_FILE: std::sync::Mutex<Option<std::path::PathBuf>> =
 static VAR_PREFIX: &str = "VI5_AUX2_";
 const VI5_CEF_SERVER_PORT: u16 = 50051;
 
-fn get_script_dir(project_name: &str) -> std::path::PathBuf {
+fn get_script_dir() -> std::path::PathBuf {
     aviutl2::config::app_data_path()
         .join("Script")
-        .join(format!("vi5.aux2_{}", project_name))
+        .join("vi5.aux2")
 }
 
 static EDIT_HANDLE: aviutl2::generic::GlobalEditHandle = aviutl2::generic::GlobalEditHandle::new();
@@ -156,13 +156,40 @@ impl Vi5Aux2 {
             .unwrap()
             .to_string_lossy()
             .to_string();
-        let script_dir = get_script_dir(project_name);
-        tracing::info!("Project script directory: {:?}", script_dir);
+        let script_dir = get_script_dir();
         if !script_dir.exists() {
             tokio::fs::create_dir_all(&script_dir).await?;
             requires_restart = true;
         }
 
+        let script_path = script_dir.join(format!("@{}.obj2", project_name));
+        let mut new_scripts = std::collections::HashMap::<String, String>::new();
+        let sub_scripts = if script_path.exists() {
+            tracing::info!("Loading existing script file for project '{}'", project_name);
+            let mut scripts = std::collections::HashMap::new();
+            let content = tokio::fs::read_to_string(&script_path).await?;
+            let mut current_script_name: Option<String> = None;
+            let mut current_script_content = Vec::new();
+            for line in content.lines() {
+                if let Some(stripped) = line.strip_prefix('@') {
+                    if let Some(script_name) = &current_script_name {
+                        scripts.insert(script_name.clone(), current_script_content.join("\n"));
+                    }
+                    current_script_name = Some(stripped.to_string());
+                    current_script_content.clear();
+                } else if current_script_name.is_some() {
+                    current_script_content.push(line);
+                }
+            }
+            if let Some(script_name) = &current_script_name {
+                scripts.insert(script_name.clone(), current_script_content.join("\n"));
+            }
+            tracing::info!("Loaded {} existing scripts from file", scripts.len());
+            scripts
+        } else {
+            tracing::info!("No existaing script file found for project '{}'", project_name);
+            std::collections::HashMap::new()
+        };
         for object in object_infos {
             let base_script = include_str!("./script.lua").to_string();
             let param_defs = object
@@ -292,14 +319,9 @@ impl Vi5Aux2 {
                     r#""--OBJECT_ID--""#,
                     serde_json::to_string(&object.id).unwrap().as_str(),
                 );
-            let script_path = script_dir.join(format!("{}.obj2", object.label));
-            tracing::info!(
-                "Loaded script for object '{}': {:?}",
-                object.id,
-                script_path
-            );
-            if script_path.exists() {
-                let existing_content = tokio::fs::read_to_string(&script_path).await?;
+
+            new_scripts.insert(object.id.clone(), script_content.clone());
+            if let Some(existing_content) = sub_scripts.get(&object.id) {
                 let existing_headers = existing_content
                     .lines()
                     .take_while(|line| line != &"--END_HEADER")
@@ -316,19 +338,10 @@ impl Vi5Aux2 {
                 );
                 tracing::debug!("Existing headers:\n{}", existing_headers);
                 tracing::debug!("New headers:\n{}", new_headers);
-                if existing_content == script_content {
-                    tracing::info!(
-                        "Script file for object '{}' is up to date: {:?}",
-                        object.id,
-                        script_path
-                    );
+                if existing_content == &script_content {
+                    tracing::info!("Script file for object '{}' is up to date", object.id,);
                 } else {
-                    tokio::fs::write(&script_path, script_content).await?;
-                    tracing::info!(
-                        "Updated script file for object '{}': {:?}",
-                        object.id,
-                        script_path
-                    );
+                    tracing::info!("Updated script file for object '{}'", object.id,);
                     if existing_headers != new_headers {
                         tracing::warn!(
                             "Script file for object '{}' has updated headers",
@@ -340,15 +353,18 @@ impl Vi5Aux2 {
                     }
                 }
             } else {
-                tokio::fs::write(&script_path, script_content).await?;
-                tracing::info!(
-                    "Created script file for object '{}': {:?}",
-                    object.id,
-                    script_path
-                );
+                tracing::info!("Created script file for object '{}'", object.id,);
                 requires_restart = true;
             }
         }
+
+        tracing::info!("Writing script files to disk...");
+        let mut script_file = tokio::fs::File::create(&script_path).await?;
+        for (object_id, script_content) in new_scripts {
+            let content = format!("@{}\n{}\n", object_id, script_content);
+            script_file.write_all(content.as_bytes()).await?;
+        }
+        drop(script_file);
 
         if requires_restart {
             tracing::info!("Script directory updated requiring restart.");
