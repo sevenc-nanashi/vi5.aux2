@@ -30,6 +30,27 @@ impl Client {
         })
     }
 
+    pub async fn connect_with_retry<D>(
+        dst: D,
+        timeout: std::time::Duration,
+    ) -> Result<Self, tonic::transport::Error>
+    where
+        D: TryInto<tonic::transport::Endpoint> + Clone,
+        D::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    {
+        let start = std::time::Instant::now();
+        loop {
+            match Self::connect(dst.clone()).await {
+                Ok(client) => return Ok(client),
+                Err(error) if start.elapsed() >= timeout => return Err(error),
+                Err(error) => {
+                    tracing::debug!(%error, "Failed to connect to server; retrying");
+                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                }
+            }
+        }
+    }
+
     pub async fn initialize(
         &mut self,
         root_path: impl Into<String>,

@@ -165,7 +165,10 @@ impl Vi5Aux2 {
         let script_path = script_dir.join(format!("@{}.obj2", project_name));
         let mut new_scripts = std::collections::HashMap::<String, String>::new();
         let sub_scripts = if script_path.exists() {
-            tracing::info!("Loading existing script file for project '{}'", project_name);
+            tracing::info!(
+                "Loading existing script file for project '{}'",
+                project_name
+            );
             let mut scripts = std::collections::HashMap::new();
             let content = tokio::fs::read_to_string(&script_path).await?;
             let mut current_script_name: Option<String> = None;
@@ -187,7 +190,10 @@ impl Vi5Aux2 {
             tracing::info!("Loaded {} existing scripts from file", scripts.len());
             scripts
         } else {
-            tracing::info!("No existaing script file found for project '{}'", project_name);
+            tracing::info!(
+                "No existaing script file found for project '{}'",
+                project_name
+            );
             std::collections::HashMap::new()
         };
         for object in object_infos {
@@ -421,6 +427,7 @@ impl Vi5Aux2 {
             .current_dir(cef_server_path.parent().unwrap())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
+            .kill_on_drop(true)
             .creation_flags(0x08000000) // CREATE_NO_WINDOW
             .tap(|cmd| {
                 tracing::info!("Launching vi5-cef server: {cmd:?}");
@@ -450,8 +457,9 @@ impl Vi5Aux2 {
                 anyhow::bail!("初期化に失敗しました (exit code: {:?})", code);
             }
 
-            res = vi5_cef::Client::connect(
-                format!("http://localhost:{}", VI5_CEF_SERVER_PORT)
+            res = vi5_cef::Client::connect_with_retry(
+                format!("http://localhost:{}", VI5_CEF_SERVER_PORT),
+                std::time::Duration::from_secs(60),
             ) => {
                 res.map_err(anyhow::Error::from)
             }
